@@ -1,0 +1,11 @@
+go 1.22.5
+
+use (
+	.
+	./cmd/golang-server-layout
+	./config
+	./internal/db
+	./internal/handlers
+	./internal/server
+	./internal/models
+)
