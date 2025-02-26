@@ -1,4 +1,5 @@
 BEGIN TRANSACTION;
+
 CREATE TABLE IF NOT EXISTS "User" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"nickName"	TEXT NOT NULL UNIQUE,
@@ -10,61 +11,68 @@ CREATE TABLE IF NOT EXISTS "User" (
 	"role"	TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+
 CREATE TABLE IF NOT EXISTS "comment" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id"	INTEGER NOT NULL,
 	"post_id"	INTEGER NOT NULL,
 	"body"	TEXT NOT NULL,
-	"createdAt"	NUMERIC,
-	"updatedAt"	NUMERIC,
+	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
+	"updatedAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("post_id") REFERENCES "post"("id"),
 	FOREIGN KEY("user_id") REFERENCES "User"("id")
 );
+
 CREATE TABLE IF NOT EXISTS "like_dislike" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id"	INTEGER NOT NULL,
 	"post_id"	INTEGER,
 	"comment_id"	INTEGER,
 	"status"	INTEGER NOT NULL,
-	"createdAt"	NUMERIC,
+	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("comment_id") REFERENCES "comment"("id"),
 	FOREIGN KEY("post_id") REFERENCES "post"("id"),
 	FOREIGN KEY("user_id") REFERENCES "User"("id")
 );
+
 CREATE TABLE IF NOT EXISTS "notification" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id"	INTEGER NOT NULL,
 	"post_id"	INTEGER,
 	"comment_id"	INTEGER,
-	"createdAt"	NUMERIC,
+	"private_id"	INTEGER,
+	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("comment_id") REFERENCES "comment"("id"),
 	FOREIGN KEY("post_id") REFERENCES "post"("id"),
+	FOREIGN KEY("comment_id") REFERENCES "comment"("id"),
+	FOREIGN KEY("private_id") REFERENCES "private_message"("id"),
 	FOREIGN KEY("user_id") REFERENCES "User"("id")
 );
+
 CREATE TABLE IF NOT EXISTS "post" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id"	INTEGER NOT NULL,
 	"title"	TEXT NOT NULL,
 	"body"	TEXT NOT NULL,
-	"createdAt"	NUMERIC NOT NULL,
-	"updatedAt"	NUMERIC NOT NULL,
+	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
+	"updatedAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
 	"image"	TEXT,
 	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("id") REFERENCES "",
 	FOREIGN KEY("user_id") REFERENCES "User"("id")
 );
+
 CREATE TABLE IF NOT EXISTS "private_message" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id1"	INTEGER NOT NULL,
 	"user_id2"	INTEGER NOT NULL,
 	"body1"	TEXT,
 	"body2"	TEXT,
-	"createdAt"	NUMERIC NOT NULL,
+	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("user_id1") REFERENCES "User"("id"),
 	FOREIGN KEY("user_id2") REFERENCES "User"("id")
 );
+
 COMMIT;
