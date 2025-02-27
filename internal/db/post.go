@@ -19,38 +19,228 @@ func createPostsTable(db *sql.DB) {
 	FOREIGN KEY("user_id") REFERENCES "User"("id")
 )`
 	executeSQL(db, createTableSQL)
+
+	// Also create post_category relation table if needed
+	createPostCategoryTableSQL := `CREATE TABLE IF NOT EXISTS "post_category" (
+	"post_id"	INTEGER NOT NULL,
+	"category_id"	INTEGER NOT NULL,
+	PRIMARY KEY("post_id", "category_id"),
+	FOREIGN KEY("post_id") REFERENCES "post"("id") ON DELETE CASCADE,
+	FOREIGN KEY("category_id") REFERENCES "category"("id")
+)`
+	executeSQL(db, createPostCategoryTableSQL)
 }
 
-func PostInsert(userID int, title, body string, categories []int) (int, error) {
+type Post struct {
+	ID        int
+	UserID    int
+	Title     string
+	Body      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Image     string
+}
+
+// Create - Insert a new post
+func PostInsert(userID int, title, body string, image string) (int, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return 0, fmt.Errorf("erreur lors du démarrage de la transaction: %v", err)
+		return 0, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	createSQL := `INSERT INTO post (user_id, title, body, status) VALUES (?, ?, ?, ?)`
-	result, err := tx.Exec(createSQL, userID, title, body, "published")
+	createSQL := `INSERT INTO post (user_id, title, body, image) VALUES (?, ?, ?, ?)`
+	result, err := tx.Exec(createSQL, userID, title, body, image)
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("erreur lors de l'exécution de la requête: %v", err)
+		return 0, fmt.Errorf("error executing query: %v", err)
 	}
 
 	postID, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("erreur lors de l'obtention de l'ID du dernier post inséré: %v", err)
+		return 0, fmt.Errorf("error getting last inserted post ID: %v", err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return 0, fmt.Errorf("erreur lors de l'engagement de la transaction: %v", err)
+		return 0, fmt.Errorf("error committing transaction: %v", err)
 	}
 
-	return int(postID), nil // Retourner l'ID du post et nil pour l'erreur
+	return int(postID), nil
 }
 
-func PostUpdateContent(id int, body string) error {
+// Read - Get post by ID
+func PostSelectByID(postID int) (*Post, error) {
+	db := SetupDatabase()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	query := `SELECT id, user_id, title, body, createdAt, updatedAt, image
+             FROM post WHERE id = ?`
+
+	var post Post
+	var createdAtStr, updatedAtStr string
+
+	err = tx.QueryRow(query, postID).Scan(
+		&post.ID, &post.UserID, &post.Title, &post.Body,
+		&createdAtStr, &updatedAtStr, &post.Image,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no post found with ID %d", postID)
+		}
+		return nil, fmt.Errorf("error executing query: %v", err)
+	}
+
+	// Parse time strings
+	post.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+	post.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	return &post, nil
+}
+
+// Read - Get post title by ID (your existing function)
+func PostTitleSelectById(postID int) (string, error) {
+	db := SetupDatabase()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return "", fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	query := `SELECT p.title FROM post p WHERE p.id = ?`
+
+	var title string
+	err = tx.QueryRow(query, postID).Scan(&title)
+	if err != nil {
+		tx.Rollback()
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no post found with ID %d", postID)
+		}
+		return "", fmt.Errorf("error executing query: %v", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	return title, nil
+}
+
+// Read - Get all posts
+func PostSelectAll() ([]*Post, error) {
+	db := SetupDatabase()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	query := `SELECT id, user_id, title, body, createdAt, updatedAt, image FROM post`
+
+	rows, err := tx.Query(query)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	var posts []*Post
+	for rows.Next() {
+		post := &Post{}
+		var createdAtStr, updatedAtStr string
+
+		if err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Body,
+			&createdAtStr, &updatedAtStr, &post.Image); err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("error scanning post: %v", err)
+		}
+
+		// Parse time strings
+		post.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		post.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
+		posts = append(posts, post)
+	}
+
+	if err = rows.Err(); err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error iterating posts: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	return posts, nil
+}
+
+// Read - Get posts by user ID
+func PostSelectByUserID(userID int) ([]*Post, error) {
+	db := SetupDatabase()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	query := `SELECT id, user_id, title, body, createdAt, updatedAt, image 
+             FROM post WHERE user_id = ?`
+
+	rows, err := tx.Query(query, userID)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	var posts []*Post
+	for rows.Next() {
+		post := &Post{}
+		var createdAtStr, updatedAtStr string
+
+		if err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Body,
+			&createdAtStr, &updatedAtStr, &post.Image); err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("error scanning post: %v", err)
+		}
+
+		// Parse time strings
+		post.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		post.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
+		posts = append(posts, post)
+	}
+
+	if err = rows.Err(); err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error iterating posts: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	return posts, nil
+}
+
+// Update - Update post content
+func PostUpdateContent(id int, title, body string, image string) error {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -59,10 +249,10 @@ func PostUpdateContent(id int, body string) error {
 		return fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	updatedAt := time.Now()
+	now := time.Now().Format("2006-01-02 15:04:05")
 
-	updateSQL := `UPDATE post SET body=?, updated_at=? WHERE id=?`
-	_, err = tx.Exec(updateSQL, body, updatedAt, id)
+	updateSQL := `UPDATE post SET title=?, body=?, updatedAt=?, image=? WHERE id=?`
+	_, err = tx.Exec(updateSQL, title, body, now, image, id)
 
 	if err != nil {
 		tx.Rollback()
@@ -76,6 +266,7 @@ func PostUpdateContent(id int, body string) error {
 	return nil
 }
 
+// Delete - Delete post
 func PostDelete(postID int) error {
 	db := SetupDatabase()
 	defer db.Close()
@@ -89,83 +280,10 @@ func PostDelete(postID int) error {
 	_, err = tx.Exec(deleteSQL, postID)
 
 	if err != nil {
-		tx.Rollback() // Rollback on error
-		return fmt.Errorf("error executing statement: %v", err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("error committing transaction: %v", err)
-	}
-
-	return nil
-}
-
-// CommentSelectByID retrieves a single comment for a specific comment ID from the database using a transaction
-func PostTitleSelectById(postID int) (string, error) {
-	db := SetupDatabase()
-	defer db.Close()
-
-	// Start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return "", fmt.Errorf("error starting transaction: %v", err)
-	}
-
-	// Ensure rollback in case of an error or panic
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p) // Rethrow panic after rollback
-		} else if err != nil {
-			tx.Rollback()
-		}
-	}()
-
-	query := `
-        SELECT p.title
-        FROM post p
-        WHERE p.id = ?`
-
-	// Execute the query with the provided commentID
-	var title string
-	err = tx.QueryRow(query, postID).Scan(&title)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("no comment found with ID %d", postID)
-		}
-		return "", fmt.Errorf("error executing query: %v", err)
-	}
-
-	// Commit the transaction
-	if err := tx.Commit(); err != nil {
-		return "", fmt.Errorf("error committing transaction: %v", err)
-	}
-
-	return title, nil
-}
-
-func UpdatePostStatus(id int, status string) error {
-	// Setup the database connection
-	db := SetupDatabase()
-	defer db.Close()
-
-	// Start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("error starting transaction: %v", err)
-	}
-
-	// SQL query to update only the status
-	updateSQL := `UPDATE post SET status=? WHERE id=?`
-
-	// Execute the update statement with the status and id parameters
-	_, err = tx.Exec(updateSQL, status, id)
-	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error executing statement: %v", err)
 	}
 
-	// Commit the transaction
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("error committing transaction: %v", err)
 	}
