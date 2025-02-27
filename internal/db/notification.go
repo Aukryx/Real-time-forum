@@ -64,17 +64,17 @@ func NotificationSelectByID(notificationID int) (*models.Notification, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, sender_id, type, content, read, related_id, createdAt
+	query := `SELECT id, user_id, sender_id, type, content, read, related_id, created_at
               FROM notification WHERE id = ?`
 
 	var notification models.Notification
 	var createdAtStr string
-	var readInt int
+	var readStr string
 	var senderID, relatedID sql.NullInt64
 
 	err = tx.QueryRow(query, notificationID).Scan(
 		&notification.ID, &notification.UserID, &senderID, &notification.Type,
-		&notification.Content, &readInt, &relatedID, &createdAtStr,
+		&notification.Content, &readStr, &relatedID, &createdAtStr,
 	)
 
 	if err != nil {
@@ -95,7 +95,7 @@ func NotificationSelectByID(notificationID int) (*models.Notification, error) {
 
 	// Parse time string and boolean
 	notification.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-	notification.Read = readInt != 0
+	notification.Read = readStr == "true" || readStr == "1"
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("error committing transaction: %v", err)
@@ -114,9 +114,9 @@ func NotificationSelectByUserID(userID int) ([]*models.Notification, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, sender_id, type, content, read, related_id, createdAt
+	query := `SELECT id, user_id, sender_id, type, content, read, related_id, created_at
               FROM notification WHERE user_id = ?
-              ORDER BY createdAt DESC`
+              ORDER BY created_at DESC`
 
 	rows, err := tx.Query(query, userID)
 	if err != nil {
@@ -129,11 +129,11 @@ func NotificationSelectByUserID(userID int) ([]*models.Notification, error) {
 	for rows.Next() {
 		notification := &models.Notification{}
 		var createdAtStr string
-		var readInt int
+		var readStr string
 		var senderID, relatedID sql.NullInt64
 
 		if err := rows.Scan(&notification.ID, &notification.UserID, &senderID,
-			&notification.Type, &notification.Content, &readInt,
+			&notification.Type, &notification.Content, &readStr,
 			&relatedID, &createdAtStr); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error scanning notification: %v", err)
@@ -149,7 +149,7 @@ func NotificationSelectByUserID(userID int) ([]*models.Notification, error) {
 
 		// Parse time string and boolean
 		notification.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-		notification.Read = readInt != 0
+		notification.Read = readStr == "true" || readStr == "1"
 
 		notifications = append(notifications, notification)
 	}
