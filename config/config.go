@@ -1,12 +1,29 @@
 package config
 
-const (
-	WEBSITE_TITLE = "Golang Server Layout"
-	DB_PATH       = "internal/database/forum.db" // a changher pour mettre le nom de de la db
-	DB_USER       = "root"
-	DB_PW         = "root"
+import (
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 var (
-	IMG_EXT = []string{".jpg", ".jpeg", ".gif", ".png"}
+	DB_PATH string
+	DB_USER = "admin"
+	DB_PW   = "password"
 )
+
+// Initialize function to validate and create necessary paths
+func Initialize() {
+	// Get the absolute path to the project root
+	_, filename, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(filename), "..")
+
+	// Set DB_PATH to the absolute path
+	DB_PATH = filepath.Join(projectRoot, "internal", "db", "forum.db")
+
+	// Ensure the database directory exists
+	dbDir := filepath.Dir(DB_PATH)
+	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+		os.MkdirAll(dbDir, 0755)
+	}
+}
