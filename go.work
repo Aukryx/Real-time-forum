@@ -1,4 +1,4 @@
-go 1.22.5
+go 1.23.6
 
 use (
 	.
@@ -6,7 +6,8 @@ use (
 	./config
 	./internal/db
 	./internal/handlers
-	./internal/server
 	./internal/models
 	./internal/lib
+	./internal/server
+	./cmd/test-models
 )
