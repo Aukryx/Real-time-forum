@@ -9,4 +9,5 @@ use (
 	./internal/models
 	./internal/server
 	./cmd/test-models
+	./internal/lib
 )
