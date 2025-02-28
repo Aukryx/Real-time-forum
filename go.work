@@ -10,4 +10,5 @@ use (
 	./internal/lib
 	./internal/server
 	./cmd/test-models
+	./internal/lib
 )
