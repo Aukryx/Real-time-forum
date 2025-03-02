@@ -8,7 +8,7 @@ import (
 )
 
 func createUsersTable(db *sql.DB) {
-	createTableSQL := `CREATE TABLE IF NOT EXISTS "User" (
+	createTableSQL := `CREATE TABLE IF NOT EXISTS "user" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"nickName"	TEXT NOT NULL UNIQUE,
 	"gender"	TEXT NOT NULL,
