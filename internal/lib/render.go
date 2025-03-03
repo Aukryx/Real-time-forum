@@ -8,7 +8,7 @@ import (
 )
 
 // Base directory for HTML files
-const TemplateDir = "web/templates"
+const TemplateDir = "../../web/templates"
 
 // RenderTemplate renders a single HTML file
 func RenderTemplate(w http.ResponseWriter, page string, data interface{}) {

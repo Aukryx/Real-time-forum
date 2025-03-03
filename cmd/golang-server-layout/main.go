@@ -31,8 +31,8 @@ func setupMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Serve static files
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
-	mux.Handle("/static/uploads/", http.StripPrefix("/static/uploads/", http.FileServer(http.Dir("web/static/uploads/"))))
+	fs := http.FileServer(http.Dir("../../web/static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Define routes
 	mux.HandleFunc("/", handlers.IndexHandler)
