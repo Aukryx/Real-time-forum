@@ -30,14 +30,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         postSection.innerHTML = formHTML;
 
+        // Listener to check when the submit button is pressed
         document.getElementById('login-form').addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            // Getting all the form values and storing them into an object
             const data = {
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
             };
 
+            // Building the POST request
             try {
                 const response = await fetch('/login', {
                     method: 'POST',
@@ -45,9 +48,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify(data),
                 });
 
+                // Await for the response of the golang server and show the message
                 const result = await response.json();
                 showMessage(result.message, result.success);
 
+                // If the success response if true, send the user to the main page after a short delay
                 if (result.success) {
                     setTimeout(() => {
                         postSection.innerHTML = '<h2>Login successful! Redirecting...</h2>';
@@ -55,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.location.href = '/dashboard';
                     }, 3000);
                 }
+
+            // Catching error between the javascript and golang communication
             } catch (error) {
                 console.error('Error:', error);
                 showMessage('Login failed. Try again later.', false);

@@ -160,15 +160,15 @@ func testUserOperations() {
 	role := "user"
 
 	userID, err := db.UserInsert(username, gender, firstName, lastName, email, password, role)
-	if err != nil {
+	if err != "nil" {
 		log.Fatalf("Error creating user: %v\n", err)
 	}
 	fmt.Printf("Created user with ID: %d\n", userID)
 
 	// Test Select By ID
 	fmt.Println("Retrieving user by ID...")
-	user, err := db.UserSelectByID(userID)
-	if err != nil {
+	user, errDB := db.UserSelectByID(userID)
+	if errDB != nil {
 		log.Fatalf("Error retrieving user: %v\n", err)
 	}
 	fmt.Printf("Retrieved user: Username=%s, Email=%s\n", user.NickName, user.Email)
@@ -176,14 +176,14 @@ func testUserOperations() {
 	// Test Update
 	fmt.Println("Updating user information...")
 	newUsername := "updateduser"
-	err = db.UserUpdate(userID, newUsername, gender, firstName, lastName, email, role)
-	if err != nil {
+	errDB = db.UserUpdate(userID, newUsername, gender, firstName, lastName, email, role)
+	if errDB != nil {
 		log.Fatalf("Error updating user: %v\n", err)
 	}
 
 	// Verify update
-	updatedUser, err := db.UserSelectByID(userID)
-	if err != nil {
+	updatedUser, errDB := db.UserSelectByID(userID)
+	if errDB != nil {
 		log.Fatalf("Error retrieving updated user: %v\n", err)
 	}
 	fmt.Printf("Updated username: %s\n", updatedUser.NickName)

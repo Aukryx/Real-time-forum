@@ -44,6 +44,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     <label for="password">Password:</label>
                     <input type="password" id="password" required>
                 </div>
+                <div class="form-group">
+                    <label for="password">Confirm password:</label>
+                    <input type="password" id="confirm-password" required>
+                </div>
                 
                 <button type="submit">Register</button>
             </form>
@@ -65,31 +69,37 @@ document.addEventListener('DOMContentLoaded', function () {
                 email: document.getElementById('email').value,
                 gender: document.getElementById('gender').value,
                 password: document.getElementById('password').value,
+                confirm_password: document.getElementById('confirm-password').value,
             };
 
-            try {
-                // Building the POST request
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-                
-                // Await for the response of the golang server and show the message
-                const result = await response.json();
-                showMessage(result.message, result.success);
-
-                // If the success response if true, send the user to the main page after a short delay
-                if (result.success) {
-                    setTimeout(() => {
-                        document.querySelector('.post-section').innerHTML = '<h2>Registration successful! Welcome!</h2>';
-                    }, 3000);
+            // Checking if the 2 passwords fields match
+            if (data.password != data.confirm_password) {
+                showMessage("Password doesn't match.", false);
+            } else {
+                try {
+                    // Building the POST request
+                    const response = await fetch('/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+                    
+                    // Await for the response of the golang server and show the message
+                    const result = await response.json();
+                    showMessage(result.message, result.success);
+    
+                    // If the success response if true, send the user to the main page after a short delay
+                    if (result.success) {
+                        setTimeout(() => {
+                            document.querySelector('.post-section').innerHTML = '<h2>Registration successful! Welcome!</h2>';
+                        }, 3000);
+                    }
+    
+                // Catching error between the javascript and golang communication
+                } catch (error) {
+                    console.error('Error:', error);
+                    showMessage('Registration failed. Try again later.', false);
                 }
-
-            // Catching error between the javascript and golang communication
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage('Registration failed. Try again later.', false);
             }
         });
     }
