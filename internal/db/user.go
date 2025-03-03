@@ -34,20 +34,37 @@ type User struct {
 }
 
 // Create - Register a new user
-func UserInsert(nickName, gender, firstName, lastName, email, password, role string) (int, error) {
+func UserInsert(nickName, gender, firstName, lastName, email, password, role string) (int, string) {
 	db := SetupDatabase()
 	defer db.Close()
 
+	// Check if username already exists
+	var existingUserID int
+	err := db.QueryRow("SELECT id FROM User WHERE nickName = ?", nickName).Scan(&existingUserID)
+	if err == nil {
+		return 0, "Username already taken"
+	} else if err != sql.ErrNoRows {
+		return 0, "Error checking username"
+	}
+
+	// Check if email already exists
+	err = db.QueryRow("SELECT id FROM User WHERE email = ?", email).Scan(&existingUserID)
+	if err == nil {
+		return 0, "Email already registered"
+	} else if err != sql.ErrNoRows {
+		return 0, "Error checking email"
+	}
+
 	tx, err := db.Begin()
 	if err != nil {
-		return 0, fmt.Errorf("error starting transaction: %v", err)
+		return 0, "Error starting transaction"
 	}
 
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("error hashing password: %v", err)
+		return 0, "Error hashing password"
 	}
 
 	// Insert user
@@ -56,20 +73,20 @@ func UserInsert(nickName, gender, firstName, lastName, email, password, role str
 	result, err := tx.Exec(createSQL, nickName, gender, firstName, lastName, email, string(hashedPassword), role)
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("error executing query: %v", err)
+		return 0, "Error executing query"
 	}
 
 	userID, err := result.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("error getting last inserted user ID: %v", err)
+		return 0, "Error getting last inserted user ID"
 	}
 
 	if err = tx.Commit(); err != nil {
-		return 0, fmt.Errorf("error committing transaction: %v", err)
+		return 0, "Error committing transaction"
 	}
 
-	return int(userID), nil
+	return int(userID), "User registered successfully"
 }
 
 // Read - Get user by ID
@@ -107,13 +124,13 @@ func UserSelectByID(userID int) (*User, error) {
 }
 
 // Read - Get user by nickname or email (for login)
-func UserSelectByCredentials(login string) (*User, error) {
+func UserSelectByCredentials(login string) (*User, string) {
 	db := SetupDatabase()
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("error starting transaction: %v", err)
+		return nil, "Error starting transaction"
 	}
 
 	query := `SELECT id, nickName, gender, firstName, lastName, email, password, role 
@@ -128,34 +145,34 @@ func UserSelectByCredentials(login string) (*User, error) {
 	if err != nil {
 		tx.Rollback()
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("no user found with credentials: %s", login)
+			return nil, "No user found with those credentials"
 		}
-		return nil, fmt.Errorf("error executing query: %v", err)
+		return nil, "Error executing query"
 	}
 
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("error committing transaction: %v", err)
+		return nil, "Error committing transaction"
 	}
 
-	return &user, nil
+	return &user, "nil"
 }
 
 // Authenticate user
-func UserAuthenticate(login, password string) (*User, error) {
+func UserAuthenticate(login, password string) (*User, string) {
 	user, err := UserSelectByCredentials(login)
-	if err != nil {
+	if err != "nil" {
 		return nil, err
 	}
 
 	// Compare password with hash
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return nil, fmt.Errorf("invalid password")
+	errPassword := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if errPassword != nil {
+		return nil, "Invalid password"
 	}
 
 	// Clear password before returning
 	user.Password = ""
-	return user, nil
+	return user, "nil"
 }
 
 // Update - Update user information

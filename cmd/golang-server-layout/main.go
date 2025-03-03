@@ -36,7 +36,10 @@ func setupMux() *http.ServeMux {
 
 	// Define routes
 	mux.HandleFunc("/", handlers.IndexHandler)
-	mux.HandleFunc("/ws/register", handlers.RegisterHandler)
+
+	// Authentication routes
+	mux.HandleFunc("/register", handlers.RegisterHandler)
+	mux.HandleFunc("/login", handlers.LoginHandler)
 	// mux.HandleFunc("/about", handlers.AboutHandler)
 
 	return mux
@@ -45,7 +48,7 @@ func setupMux() *http.ServeMux {
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:              ":8081",
+		Addr:              ":8080",
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,
