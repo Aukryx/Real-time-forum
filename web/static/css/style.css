@@ -1,49 +1,96 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* web/static/css/style.css */
+
 body {
     font-family: Arial, sans-serif;
-    display: grid;
-    grid-template-columns: 15% 85%;
-    grid-template-rows: auto 1fr;
-    height: 100vh;
-    gap: 10px;
-    padding: 10px;
-    margin-right: 10px;
-}
-.users-online {
-    background: #f4f4f4;
-    padding: 20px;
-    grid-row: span 2;
-    border: 2px dashed black;
-}
-.navbar {
-    background: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  header {
+    background-color: #2c3e50;
     color: white;
-    padding: 20px;
-    border: 2px dashed black;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  main {
+    flex: 1;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-}
-.navbar button {
-    background: white;
+    padding: 2rem;
+  }
+  
+  .login-container {
+    background-color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  button {
+    flex: 1;
+    padding: 0.75rem;
     border: none;
-    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 1rem;
     cursor: pointer;
-    font-size: 16px;
-    margin: 0 5px;
-}
-.navbar-left {
-    display: flex;
-}
-.navbar-right {
-    display: flex;
-}
-.post-section {
-    background: #fff;
-    padding: 20px;
-    border: 2px dashed black;
-}
+    transition: background-color 0.3s;
+  }
+  
+  #loginButton {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  #loginButton:hover {
+    background-color: #2980b9;
+  }
+  
+  #registerButton {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  #registerButton:hover {
+    background-color: #27ae60;
+  }
+  
+  footer {
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    margin-top: auto;
+  }
