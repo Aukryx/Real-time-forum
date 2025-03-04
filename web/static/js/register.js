@@ -1,4 +1,4 @@
-import { createWelcomePage } from "./welcome.js";
+import { createWelcomePage, removeWelcomePage } from "./welcome.js";
 
 // Function that creates a div showing the registration result message
 export function showMessage(text, isSuccess) {
@@ -323,7 +323,8 @@ export function replaceWithRegistrationForm() {
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
             setTimeout(() => {
-                document.querySelector('.post-section').innerHTML = '<h2>Registration successful! Welcome!</h2>';
+                removeWelcomePage()
+                window.location.href = "index.html";
             }, 3000);
         }
 
