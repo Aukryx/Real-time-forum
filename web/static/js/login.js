@@ -30,14 +30,16 @@ export async function login() {
 
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
+            let loginContainer = document.querySelector('.login-container')
+            let message = document.createElement('div')
+            message.setAttribute('class', "message")
+            message.setAttribute('style', "display: none;")
+            message.setAttribute('id', "message")
+            showMessage("Login successful! Redirecting...", true)
+            loginContainer.appendChild(message)
             setTimeout(() => {
-                console.log("success");
-                
-                let message = document.createElement('div')
-                message.innerText = '<h2>Login successful! Redirecting...</h2>'
-                document.querySelector('#login-container').appendChild(message)
                 // Redirect to dashboard or home after login
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             }, 3000);
         }
 

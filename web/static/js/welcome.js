@@ -1,11 +1,12 @@
 // web/static/js/welcome.js - Create the welcome page elements dynamically
 import { login } from "./login.js";
+import { replaceWithRegistrationForm } from "./register.js";
 
 document.addEventListener('DOMContentLoaded', function() {
   createWelcomePage();
 });
 
-function createWelcomePage() {
+export function createWelcomePage() {
   // Set body styles first
   document.body.style.fontFamily = 'Arial, sans-serif';
   document.body.style.margin = '0';
@@ -195,6 +196,11 @@ function createWelcomePage() {
   
   buttonGroup.appendChild(loginButton);
   buttonGroup.appendChild(registerButton);
+
+  let message = document.createElement('div')
+  message.setAttribute('class', "message")
+  message.setAttribute('style', "display: none;")
+  message.setAttribute('id', "message")
   
   // Add all elements to form
   loginForm.appendChild(usernameGroup);
@@ -203,6 +209,7 @@ function createWelcomePage() {
   
   // Add form to login container
   loginContainer.appendChild(loginForm);
+  loginContainer.appendChild(message)
   
   // Add login container to center column
   centerColumn.appendChild(loginContainer);
@@ -300,10 +307,12 @@ function createWelcomePage() {
     
     if (username && password) {
       console.log('Registration attempt:', { username, password });
-      alert(`Registration attempt with username: ${username}`);
+
+      // alert(`Registration attempt with username: ${username}`);
       // For a real application, you would handle registration logic here
     } else {
-      alert('Please enter both username and password');
+      replaceWithRegistrationForm()
+      // alert('Please enter both username and password');
     }
   });
   
