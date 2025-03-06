@@ -1,6 +1,7 @@
 package main
 
 import (
+	"config"
 	"handlers"
 	"log"
 	"net/http"
@@ -8,15 +9,12 @@ import (
 )
 
 func main() {
-	// Load environment variables
-	// lib.LoadEnv(".env")
+	// Initialize configuration
+	config.Initialize()
 
 	// Configure router and server
 	mux := setupMux()
 	server := setupServer(mux)
-
-	// Settup database
-	// db := db.SetupDatabase()
 
 	log.Printf("Server starting on http://localhost%s...", server.Addr)
 
@@ -40,7 +38,14 @@ func setupMux() *http.ServeMux {
 	// Authentication routes
 	mux.HandleFunc("/register", handlers.RegisterHandler)
 	mux.HandleFunc("/login", handlers.LoginHandler)
-	// mux.HandleFunc("/about", handlers.AboutHandler)
+
+	// API routes
+	mux.HandleFunc("/api/users", handlers.UserSelectAllHandler)
+	mux.HandleFunc("/api/user", handlers.GetUserByIdHandler)
+	mux.HandleFunc("/api/posts", handlers.FetchPostsHandler)
+	mux.HandleFunc("/api/post", handlers.CreatePostHandler)
+	mux.HandleFunc("/api/comments", handlers.FetchPostCommentsHandler)
+	mux.HandleFunc("/api/comment", handlers.CreateCommentHandler)
 
 	return mux
 }
@@ -48,7 +53,7 @@ func setupMux() *http.ServeMux {
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:              ":8080",
+		Addr:              ":8081",
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,

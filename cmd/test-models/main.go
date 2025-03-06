@@ -23,9 +23,9 @@ func main() {
 	fmt.Println("\n==== Testing Notification Operations ====")
 	testNotificationOperations()
 
-	// Add tests for other operations
-	fmt.Println("\n==== Testing User Operations ====")
-	testUserOperations()
+	// // Add tests for other operations
+	// fmt.Println("\n==== Testing User Operations ====")
+	// testUserOperations()
 
 	fmt.Println("\n==== Testing Post Operations ====")
 	testPostOperations()

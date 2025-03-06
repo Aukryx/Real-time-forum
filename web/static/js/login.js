@@ -1,4 +1,6 @@
 import { showMessage } from "./register.js";
+import { createMainPage } from "./main.js";
+import { removeWelcomePage } from "./welcome.js";
 
 // Get reference to the register and login buttons
 const loginButton = document.querySelector('#loginForm');
@@ -7,9 +9,7 @@ console.log(loginButton);
 // Listener to check when the submit button is pressed
 export async function login() {
     // e.preventDefault();
-    console.log("test");
     
-
     // Getting all the form values and storing them into an object
     const data = {
         username: document.getElementById('username').value,
@@ -26,7 +26,6 @@ export async function login() {
 
         // Await for the response of the golang server and show the message
         const result = await response.json();
-        showMessage(result.message, result.success);
 
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
@@ -39,7 +38,8 @@ export async function login() {
             loginContainer.appendChild(message)
             setTimeout(() => {
                 // Redirect to dashboard or home after login
-                window.location.href = '/';
+                removeWelcomePage()
+                createMainPage()
             }, 3000);
         }
 
@@ -49,12 +49,3 @@ export async function login() {
         showMessage('Login failed. Try again later.', false);
     }
 };
-
-
-// Event listener for the login button
-if (loginButton) {
-    loginButton.addEventListener('click', function (e) {
-        e.preventDefault();
-        createLoginForm();
-    });
-}
