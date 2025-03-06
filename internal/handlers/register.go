@@ -3,6 +3,7 @@ package handlers
 import (
 	"db"
 	"encoding/json"
+	"middlewares"
 	"net/http"
 )
 
@@ -35,16 +36,21 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uuid := middlewares.GenerateSessionID()
+
 	// Inserting the user into the database
-	count, errorDB := db.UserInsert(req.Username, req.Gender, req.Firstname, req.Lastname, req.Email, req.Password, "User")
+	userID, errorMsg := db.UserInsert(uuid, req.Username, req.Gender, req.Firstname, req.Lastname, req.Email, req.Password, "User", 1)
 
 	// Checking if the insert failed
-	if count == 0 {
-		response := RegisterResponse{Success: false, Message: errorDB}
+	if userID == 0 {
+		response := RegisterResponse{Success: false, Message: errorMsg}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	// Maintenant que l'utilisateur est enregistré, créer une session
+	middlewares.CreateSession(w, userID, req.Username, "User", uuid)
 
 	// If the insert didn't fail, notify the js of the success
 	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Registration successful"})

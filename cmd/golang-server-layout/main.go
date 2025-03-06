@@ -40,12 +40,16 @@ func setupMux() *http.ServeMux {
 	mux.HandleFunc("/login", handlers.LoginHandler)
 
 	// API routes
-	mux.HandleFunc("/api/users", handlers.UserSelectAllHandler)
+	mux.HandleFunc("/api/users", handlers.GetConnectedAndDisconnectedUsers)
+	// mux.HandleFunc("/api/users", handlers.UserSelectAllHandler)
 	mux.HandleFunc("/api/user", handlers.GetUserByIdHandler)
 	mux.HandleFunc("/api/posts", handlers.FetchPostsHandler)
 	mux.HandleFunc("/api/post", handlers.CreatePostHandler)
 	mux.HandleFunc("/api/comments", handlers.FetchPostCommentsHandler)
 	mux.HandleFunc("/api/comment", handlers.CreateCommentHandler)
+
+	// Session management
+	mux.HandleFunc("/logout", handlers.LogOutHandler)
 
 	return mux
 }
@@ -53,7 +57,7 @@ func setupMux() *http.ServeMux {
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:              ":8081",
+		Addr:              ":8080",
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,

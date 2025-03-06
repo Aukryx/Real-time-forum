@@ -3,6 +3,8 @@ package handlers
 import (
 	"db"
 	"encoding/json"
+	"fmt"
+	"middlewares"
 	"net/http"
 )
 
@@ -31,10 +33,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Inserting the user into the database
-	_, errorDB := db.UserAuthenticate(req.Name, req.Password)
+	// Authenticate the user using the database
+	user, errorDB := db.UserAuthenticate(req.Name, req.Password)
 
-	// Checking if the insert failed
+	// Checking if the authentication failed
 	if errorDB != "nil" {
 		response := RegisterResponse{Success: false, Message: errorDB}
 		w.Header().Set("Content-Type", "application/json")
@@ -42,6 +44,17 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If the insert didn't fail, notify the js of the success
+	// Create a session for the authenticated user
+	middlewares.CreateSession(w, user.ID, user.NickName, user.Role, user.UUID)
+
+	db := db.SetupDatabase()
+	// Unlogging the User in the database
+	state := `UPDATE user SET connected = ? WHERE uuid = ?`
+	_, err_db := db.Exec(state, 1, user.UUID)
+	if err_db != nil {
+		fmt.Printf("Error logging in")
+	}
+
+	// If authentication succeeded, notify the client of the success
 	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Login successful"})
 }
