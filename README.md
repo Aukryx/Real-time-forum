@@ -19,3 +19,14 @@ A single-page application forum with real-time features using WebSockets. This p
 - No frontend frameworks or libraries (pure JavaScript)
 - Limited Go packages (standard packages, Gorilla WebSocket, SQLite3, bcrypt, and UUID packages)
 - Single HTML file with JavaScript-based routing
+
+## Dids
+- Login and register pages front, back (can register and log)
+- Home Page (list of users and posts displayed)
+- All CRUD functions working
+
+## DOs
+- Separate connected and disconnected users (and display them separatly in the list of users)
+- Implement cookie session system
+- Add Comments to post
+- Enhance to header (Name of the user, notif, disconnect button)
