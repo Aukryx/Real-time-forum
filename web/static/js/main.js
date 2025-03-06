@@ -143,8 +143,9 @@ async function populateUserList() {
       console.log('Fetched users:', users);
       
       users.forEach(user => {
+        console.log('Processing user:', user);
         const li = document.createElement('li');
-        li.textContent = user.nickName; // Make sure this matches the exact property name
+        li.textContent = user.NickName || user.name || user.username || `User ${user.id}` || 'Unknown User';
         li.style.padding = '0.5rem';
         li.style.borderBottom = '1px solid #ddd';
         li.style.cursor = 'pointer';

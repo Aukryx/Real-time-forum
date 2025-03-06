@@ -323,7 +323,7 @@ export function createWelcomePage() {
 }
 
 // Function to remove the welcome page
-function removeWelcomePage() {
+export function removeWelcomePage() {
   document.body.innerHTML = '';
   console.log('Welcome page removed');
 }

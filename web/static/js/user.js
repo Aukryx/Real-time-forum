@@ -15,7 +15,7 @@ export async function UserSelectAll() {
       }
 
       const users = await response.json();
-      console.log('Received users:', users); // Add this debugging line
+      console.log('Received users:', users); // Add this debugging line   
       return users;
   } catch (error) {
       console.error('Error fetching users:', error);
