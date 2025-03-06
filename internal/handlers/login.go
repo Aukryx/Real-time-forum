@@ -3,6 +3,7 @@ package handlers
 import (
 	"db"
 	"encoding/json"
+	"fmt"
 	"middlewares"
 	"net/http"
 )
@@ -44,7 +45,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a session for the authenticated user
-	middlewares.CreateSession(w, user.ID, user.NickName, user.Role)
+	middlewares.CreateSession(w, user.ID, user.NickName, user.Role, user.UUID)
+
+	db := db.SetupDatabase()
+	// Unlogging the User in the database
+	state := `UPDATE user SET connected = ? WHERE uuid = ?`
+	_, err_db := db.Exec(state, 1, user.UUID)
+	if err_db != nil {
+		fmt.Printf("Error logging in")
+	}
 
 	// If authentication succeeded, notify the client of the success
 	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Login successful"})

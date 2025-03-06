@@ -12,17 +12,16 @@ func GenerateSessionID() string {
 	return uuid.New().String()
 }
 
-func CreateSession(w http.ResponseWriter, userID int, username, role string) {
+func CreateSession(w http.ResponseWriter, userID int, username, role, uuid string) {
 	oldSessionID, exists := SessionExists(userID)
 	if exists {
 		DeleteSession(oldSessionID)
 	}
-	sessionID := GenerateSessionID()
 
 	// Set cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
-		Value:    sessionID,
+		Value:    uuid,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Secure:   true, // Set to true if using HTTPS
@@ -30,7 +29,7 @@ func CreateSession(w http.ResponseWriter, userID int, username, role string) {
 	})
 
 	// Store session in server (implement this function)
-	StoreSession(sessionID, userID, username, role)
+	StoreSession(uuid, userID, username, role)
 }
 
 type Session struct {

@@ -36,8 +36,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uuid := middlewares.GenerateSessionID()
+
 	// Inserting the user into the database
-	userID, errorMsg := db.UserInsert(req.Username, req.Gender, req.Firstname, req.Lastname, req.Email, req.Password, "User")
+	userID, errorMsg := db.UserInsert(uuid, req.Username, req.Gender, req.Firstname, req.Lastname, req.Email, req.Password, "User", 1)
 
 	// Checking if the insert failed
 	if userID == 0 {
@@ -48,7 +50,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Maintenant que l'utilisateur est enregistré, créer une session
-	middlewares.CreateSession(w, userID, req.Username, "User")
+	middlewares.CreateSession(w, userID, req.Username, "User", uuid)
 
 	// If the insert didn't fail, notify the js of the success
 	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Registration successful"})

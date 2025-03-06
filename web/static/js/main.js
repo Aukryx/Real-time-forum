@@ -1,6 +1,7 @@
 // web/static/js/main.js
 import { UserSelectAll } from './user.js';
 import { fetchPosts, createPost } from './forum.js';
+import { createWelcomePage, removeWelcomePage } from './welcome.js';
 
 export function createMainPage() {
   // Set body styles
@@ -21,10 +22,50 @@ export function createMainPage() {
   header.style.color = 'white';
   header.style.padding = '1rem';
   header.style.textAlign = 'center';
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
   
+  // Left part of header with site title
+  const headerLeft = document.createElement('div');
   const siteTitle = document.createElement('h1');
   siteTitle.textContent = 'PROTS.COM';
-  header.appendChild(siteTitle);
+  siteTitle.style.margin = '0';
+  headerLeft.appendChild(siteTitle);
+  
+  // Right part of header with button
+  const headerRight = document.createElement('div');
+  const headerButton = document.createElement('button');
+  headerButton.textContent = 'Log Out';
+  headerButton.id = 'logout';
+  headerButton.style.padding = '0.5rem 1rem';
+  headerButton.style.backgroundColor = '#3498db';
+  headerButton.style.color = 'white';
+  headerButton.style.border = 'none';
+  headerButton.style.borderRadius = '4px';
+  headerButton.style.cursor = 'pointer';
+  
+  // Add hover effect
+  headerButton.addEventListener('mouseenter', () => {
+    headerButton.style.backgroundColor = '#2980b9';
+  });
+  
+  headerButton.addEventListener('mouseleave', () => {
+    headerButton.style.backgroundColor = '#3498db';
+  });
+  
+  // Add click event listener
+  headerButton.addEventListener('click', () => {
+    window.location.href = '/logout';
+    removeWelcomePage()
+    createWelcomePage()
+  });
+  
+  headerRight.appendChild(headerButton);
+  
+  // Add both sections to the header
+  header.appendChild(headerLeft);
+  header.appendChild(headerRight);
   
   // Create content wrapper
   const contentWrapper = document.createElement('div');
@@ -132,37 +173,103 @@ export function createMainPage() {
   setupPostCreation();
 }
 
-async function populateUserList() {
-    const userList = document.getElementById('userList');
-    userList.innerHTML = ''; // Clear existing users
+export async function populateUserList() {
+  const userList = document.getElementById('userList');
+  userList.innerHTML = ''; // Clear existing users
+  
+  try {
+    const userData = await UserSelectAll();
     
-    try {
-      const users = await UserSelectAll();
+    // Add debugging
+    console.log('Fetched user data:', userData);
+    
+    // Create a section for connected users
+    if (userData.connectedUsers && userData.connectedUsers.length > 0) {
+      const connectedHeader = document.createElement('li');
+      connectedHeader.textContent = 'Connected Users';
+      connectedHeader.style.fontWeight = 'bold';
+      connectedHeader.style.padding = '0.5rem';
+      connectedHeader.style.backgroundColor = '#f0f0f0';
+      userList.appendChild(connectedHeader);
       
-      // Add debugging
-      console.log('Fetched users:', users);
-      
-      users.forEach(user => {
-        console.log('Processing user:', user);
-        const li = document.createElement('li');
-        li.textContent = user.NickName || user.name || user.username || `User ${user.id}` || 'Unknown User';
-        li.style.padding = '0.5rem';
-        li.style.borderBottom = '1px solid #ddd';
-        li.style.cursor = 'pointer';
-        
-        li.addEventListener('click', () => {
-          console.log('Selected user:', user);
-        });
-        
+      userData.connectedUsers.forEach(user => {
+        console.log('Processing connected user:', user);
+        const li = createUserListItem(user, true);
         userList.appendChild(li);
       });
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    }
+    
+    // Create a section for disconnected users
+    if (userData.disconnectedUsers && userData.disconnectedUsers.length > 0) {
+      const disconnectedHeader = document.createElement('li');
+      disconnectedHeader.textContent = 'Disconnected Users';
+      disconnectedHeader.style.fontWeight = 'bold';
+      disconnectedHeader.style.padding = '0.5rem';
+      disconnectedHeader.style.backgroundColor = '#f0f0f0';
+      userList.appendChild(disconnectedHeader);
+      
+      userData.disconnectedUsers.forEach(user => {
+        console.log('Processing disconnected user:', user);
+        const li = createUserListItem(user, false);
+        userList.appendChild(li);
+      });
+    }
+    
+    // If no users were found in either category
+    if ((!userData.connectedUsers || userData.connectedUsers.length === 0) && 
+        (!userData.disconnectedUsers || userData.disconnectedUsers.length === 0)) {
       const li = document.createElement('li');
-      li.textContent = 'Error loading users';
+      li.textContent = 'No users found';
       userList.appendChild(li);
     }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    const li = document.createElement('li');
+    li.textContent = 'Error loading users';
+    userList.appendChild(li);
   }
+}
+
+function createUserListItem(user, isConnected) {
+  const li = document.createElement('li');
+  
+  // Create a flex container for the status circle and username
+  li.style.display = 'flex';
+  li.style.alignItems = 'center';
+  li.style.padding = '0.5rem';
+  li.style.borderBottom = '1px solid #ddd';
+  li.style.cursor = 'pointer';
+  
+  // Create status circle
+  const statusCircle = document.createElement('div');
+  statusCircle.style.width = '12px';
+  statusCircle.style.height = '12px';
+  statusCircle.style.borderRadius = '50%';
+  statusCircle.style.marginRight = '10px';
+  
+  // Set color based on connection status
+  if (isConnected) {
+    statusCircle.style.backgroundColor = '#2ecc71'; // Green for connected
+  } else {
+    statusCircle.style.backgroundColor = '#95a5a6'; // Gray for disconnected
+  }
+  
+  // Username text
+  const userText = document.createElement('span');
+  userText.textContent = user.nickName || user.NickName || user.name || user.username || `User ${user.id}` || 'Unknown User';
+  
+  // Add elements to the list item
+  li.appendChild(statusCircle);
+  li.appendChild(userText);
+  
+  // Add click event to the list item
+  li.addEventListener('click', () => {
+    console.log('Selected user:', user);
+    // You can add additional functionality here, like showing user details
+  });
+  
+  return li;
+}
 
 async function populatePostList() {
     const postList = document.getElementById('postList');

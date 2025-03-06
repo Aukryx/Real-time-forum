@@ -10,6 +10,7 @@ import (
 func createUsersTable(db *sql.DB) {
 	createTableSQL := `CREATE TABLE IF NOT EXISTS "user" (
 	"id"	INTEGER NOT NULL UNIQUE,
+	"uuid"  TEXT NOT NULL UNIQUE,
 	"nickName"	TEXT NOT NULL UNIQUE,
 	"gender"	TEXT NOT NULL,
 	"firstName"	TEXT NOT NULL,
@@ -17,6 +18,7 @@ func createUsersTable(db *sql.DB) {
 	"email"	TEXT NOT NULL UNIQUE,
 	"password"	TEXT NOT NULL,
 	"role"	TEXT NOT NULL,
+	"connected" INTEGER NOT NULL DEFAULT 0,
 	PRIMARY KEY("id" AUTOINCREMENT))`
 
 	executeSQL(db, createTableSQL)
@@ -24,6 +26,7 @@ func createUsersTable(db *sql.DB) {
 
 type User struct {
 	ID        int
+	UUID      string
 	NickName  string
 	Gender    string
 	FirstName string
@@ -34,7 +37,7 @@ type User struct {
 }
 
 // Create - Register a new user
-func UserInsert(nickName, gender, firstName, lastName, email, password, role string) (int, string) {
+func UserInsert(uuid, nickName, gender, firstName, lastName, email, password, role string, connected int) (int, string) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -68,9 +71,9 @@ func UserInsert(nickName, gender, firstName, lastName, email, password, role str
 	}
 
 	// Insert user
-	createSQL := `INSERT INTO User (nickName, gender, firstName, lastName, email, password, role) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`
-	result, err := tx.Exec(createSQL, nickName, gender, firstName, lastName, email, string(hashedPassword), role)
+	createSQL := `INSERT INTO User (uuid, nickName, gender, firstName, lastName, email, password, role, connected) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	result, err := tx.Exec(createSQL, uuid, nickName, gender, firstName, lastName, email, string(hashedPassword), role, connected)
 	if err != nil {
 		tx.Rollback()
 		return 0, "Error executing query"
@@ -133,12 +136,12 @@ func UserSelectByCredentials(login string) (*User, string) {
 		return nil, "Error starting transaction"
 	}
 
-	query := `SELECT id, nickName, gender, firstName, lastName, email, password, role 
+	query := `SELECT id, uuid, nickName, gender, firstName, lastName, email, password, role 
              FROM User WHERE nickName = ? OR email = ?`
 
 	var user User
 	err = tx.QueryRow(query, login, login).Scan(
-		&user.ID, &user.NickName, &user.Gender, &user.FirstName,
+		&user.ID, &user.UUID, &user.NickName, &user.Gender, &user.FirstName,
 		&user.LastName, &user.Email, &user.Password, &user.Role,
 	)
 
