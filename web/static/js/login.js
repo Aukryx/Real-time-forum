@@ -1,4 +1,3 @@
-import { showMessage } from "./register.js";
 import { createMainPage } from "./main.js";
 import { removeWelcomePage } from "./welcome.js";
 
@@ -26,16 +25,10 @@ export async function login() {
 
         // Await for the response of the golang server and show the message
         const result = await response.json();
+        showMessage(result.message, result.success);
 
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
-            let loginContainer = document.querySelector('.login-container')
-            let message = document.createElement('div')
-            message.setAttribute('class', "message")
-            message.setAttribute('style', "display: none;")
-            message.setAttribute('id', "message")
-            showMessage("Login successful! Redirecting...", true)
-            loginContainer.appendChild(message)
             setTimeout(() => {
                 // Redirect to dashboard or home after login
                 removeWelcomePage()
@@ -48,4 +41,22 @@ export async function login() {
         console.error('Error:', error);
         showMessage('Login failed. Try again later.', false);
     }
+
+    function showMessage(text, isSuccess) {
+        const messageDiv = document.getElementById('message');
+        if (messageDiv) {
+          messageDiv.textContent = text;
+          messageDiv.style.display = 'block';
+          
+          if (isSuccess) {
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.style.border = '1px solid #c3e6cb';
+          } else {
+            messageDiv.style.backgroundColor = '#f8d7da';
+            messageDiv.style.color = '#721c24';
+            messageDiv.style.border = '1px solid #f5c6cb';
+          }
+        }
+      }
 };
