@@ -1,9 +1,37 @@
 // web/static/js/welcome.js - Create the welcome page elements dynamically
 import { login } from "./login.js";
+import { createMainPage } from "./main.js";
 import { replaceWithRegistrationForm } from "./register.js";
 
-document.addEventListener('DOMContentLoaded', function() {
-  createWelcomePage();
+// Function to check if user is logged in
+export async function checkSession() {
+  try {
+    const response = await fetch('/api/check-session', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      // Include credentials to send cookies
+      credentials: 'include'
+    });
+    
+    const result = await response.json();
+    return result.loggedIn; // Should return true if session is valid
+  } catch (error) {
+    console.error('Session check error:', error);
+    return false; // Assume not logged in if there's an error
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  // Check if user is already logged in
+  const isLoggedIn = await checkSession();
+  
+  if (isLoggedIn) {
+    // User is logged in, show main page
+    createMainPage();
+  } else {
+    // User is not logged in, show welcome/login page
+    createWelcomePage();
+  }
 });
 
 export function createWelcomePage() {
@@ -302,18 +330,7 @@ export function createWelcomePage() {
   });
   
   registerButton.addEventListener('click', function() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (username && password) {
-      console.log('Registration attempt:', { username, password });
-
-      // alert(`Registration attempt with username: ${username}`);
-      // For a real application, you would handle registration logic here
-    } else {
-      replaceWithRegistrationForm()
-      // alert('Please enter both username and password');
-    }
+    replaceWithRegistrationForm()
   });
   
   // Add all elements to body

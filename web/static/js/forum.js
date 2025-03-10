@@ -1,6 +1,8 @@
 // web/static/js/forum.js
 
 export async function createPost(postData) {
+    console.log(postData);
+    
     try {
         const response = await fetch('/api/posts', {
             method: 'POST',

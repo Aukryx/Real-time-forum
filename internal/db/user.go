@@ -302,3 +302,33 @@ func UserSelectAll() ([]User, error) {
 
 	return users, nil
 }
+
+func UserNicknameWithUUID(uuid string) string {
+	// Setup database and variable to return
+	db := SetupDatabase()
+	var nickName string
+
+	// Unlogging the User in the database
+	state := `SELECT nickName FROM user WHERE uuid = ?`
+	err_db := db.QueryRow(state, 0, uuid).Scan(&nickName)
+	if err_db != nil {
+		fmt.Printf("Error logging out")
+	}
+
+	return nickName
+}
+
+func UserIDWithUUID(uuid string) int {
+	// Setup database and variable to return
+	db := SetupDatabase()
+	var id int
+
+	// Unlogging the User in the database
+	state := `SELECT id FROM user WHERE uuid = ?`
+	err_db := db.QueryRow(state, 0, uuid).Scan(&id)
+	if err_db != nil {
+		fmt.Printf("Error logging out")
+	}
+
+	return id
+}

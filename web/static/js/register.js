@@ -368,6 +368,6 @@ export function replaceWithRegistrationForm() {
   let registerButtontest = document.getElementById('backButton')
   if (registerButtontest) {
     registerButtontest.addEventListener('click', () => {
-        createWelcomePage()
-      })
+      createWelcomePage()
+    })
   }

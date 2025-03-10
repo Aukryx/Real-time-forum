@@ -99,11 +99,19 @@ export function createMainPage() {
   // Post Creation Input
   const postInputContainer = document.createElement('div');
   postInputContainer.style.marginBottom = '1rem';
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'newPostTitle';
+  titleInput.placeholder = 'Post title...';
+  titleInput.style.width = '100%';
+  titleInput.style.padding = '0.5rem';
+  titleInput.style.marginBottom = '0.5rem';
   
   const postInput = document.createElement('input');
   postInput.type = 'text';
   postInput.id = 'newPostInput';
-  postInput.placeholder = 'Create a new post...';
+  postInput.placeholder = 'Post content...';
   postInput.style.width = '100%';
   postInput.style.padding = '0.5rem';
   postInput.style.marginBottom = '0.5rem';
@@ -113,6 +121,7 @@ export function createMainPage() {
   submitPostButton.id = 'submitPostButton';
   submitPostButton.style.padding = '0.5rem 1rem';
   
+  postInputContainer.appendChild(titleInput);
   postInputContainer.appendChild(postInput);
   postInputContainer.appendChild(submitPostButton);
   
@@ -124,8 +133,13 @@ export function createMainPage() {
   postList.style.padding = '0';
   postList.id = 'postList';
   
+  const postsContainer = document.createElement('div');
+  postsContainer.id = 'posts-container';
+  postsContainer.style.marginTop = '1rem';
+
   centerColumn.appendChild(postInputContainer);
   centerColumn.appendChild(postsTitle);
+  centerColumn.appendChild(postsContainer); // Add this line
   centerColumn.appendChild(postList);
   
   // Right Column - Random Images
@@ -357,29 +371,205 @@ function populateImageList() {
 }
 
 function setupPostCreation() {
+  const titleInput = document.getElementById('newPostTitle');
   const postInput = document.getElementById('newPostInput');
   const submitButton = document.getElementById('submitPostButton');
   
   submitButton.addEventListener('click', async () => {
+    const postTitle = titleInput.value.trim();
     const postContent = postInput.value.trim();
     
-    if (postContent) {
+    if (postTitle && postContent) {
       try {
-        await createPost({
-          title: 'New Post', // You might want to add a title input
-          content: postContent,
-          author: 'CurrentUser' // Replace with actual logged-in user
+        const response = await fetch('/api/postCreation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: postTitle,
+            content: postContent
+          }),
         });
         
-        postInput.value = ''; // Clear input
-        await populatePostList(); // Refresh post list
+        const newPost = await response.json();
+        console.log('Post created:', newPost);
+        
+        // Clear the input fields after successful submission
+        titleInput.value = '';
+        postInput.value = '';
+        
+        // Refresh the post list to show the new post
+        populatePostList();
       } catch (error) {
         console.error('Error creating post:', error);
-        // Optional: Show error to user
       }
+    } else {
+      console.warn('Post title and content are required');
     }
   });
 }
 
-// Ensure the page is created when the DOM is loaded
-document.addEventListener('DOMContentLoaded', createMainPage);
+// Throttle function to limit the rate at which we call the API
+function throttle(callback, delay) {
+  let lastCall = 0;
+  return function(...args) {
+    const now = new Date().getTime();
+    if (now - lastCall < delay) {
+      return;
+    }
+    lastCall = now;
+    return callback(...args);
+  };
+}
+
+// Post submission functionality
+const titleInput = document.getElementById('newPostTitle')
+const postInput = document.getElementById('newPostInput');
+const submitButton = document.getElementById('submitPostButton');
+const postsContainer = document.getElementById('posts-container');
+
+// Function to submit a new post
+// Replace your current submitPost function with this one
+async function submitPost() {
+  const postTitle = titleInput.value.trim();
+  const postContent = postInput.value.trim();
+    
+  if (postTitle && postContent) {
+    const data = {
+      title: postTitle,  // Changed to lowercase to match the setupPostCreation function
+      content: postContent  // Changed to 'content' to match the setupPostCreation function
+    };
+
+    try {
+      const response = await fetch('/api/postCreation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error (${response.status}): ${errorText}`);
+        return;
+      }
+        
+      // Try parsing the response as JSON
+      try {
+        const newPost = await response.json();
+        console.log('Post created:', newPost);
+      } catch (parseError) {
+        console.log('Response was not JSON, but post might have been created');
+      }
+      
+      // Clear the input fields after submission attempt
+      titleInput.value = '';
+      postInput.value = '';
+      
+      // Refresh posts
+      checkForNewPosts();
+      
+    } catch (error) {
+      console.error('Network error:', error);
+    }
+  } else {
+    console.warn('Post title and content are required');
+  }
+}
+
+// Add event listener to the submit button
+if (submitButton) {
+  submitButton.addEventListener('click', submitPost);
+}
+
+// Function to fetch new posts from the server
+async function fetchNewPosts(lastPostId = 0) {
+  try {
+    const response = await fetch(`/api/posts/new?lastId=${lastPostId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching new posts:', error);
+    return { posts: [] };
+  }
+}
+
+// Function to render posts to the page
+function renderPosts(posts, container) {
+  if (!posts || posts.length === 0) return;
+  
+  posts.forEach(post => {
+    const postElement = document.createElement('div');
+    postElement.className = 'post';
+    postElement.setAttribute('data-id', post.id);
+    postElement.innerHTML = `
+      <h3>${post.title}</h3>
+      <p class="post-meta">Posted by User #${post.user_id} on ${new Date(post.createdAt).toLocaleString()}</p>
+      <div class="post-body">${post.body}</div>
+      ${post.image ? `<img src="${post.image}" alt="Post image" class="post-image">` : ''}
+    `;
+    container.prepend(postElement);
+  });
+}
+
+// Get the largest post ID currently in the DOM
+function getLatestPostId() {
+  const posts = document.querySelectorAll('.post');
+  let maxId = 0;
+  
+  posts.forEach(post => {
+    const postId = parseInt(post.getAttribute('data-id') || '0');
+    if (postId > maxId) {
+      maxId = postId;
+    }
+  });
+  
+  return maxId;
+}
+
+// Function to check for new posts
+async function checkForNewPosts() {
+  if (!postsContainer) return;
+  
+  const latestPostId = getLatestPostId();
+  const { posts } = await fetchNewPosts(latestPostId);
+  renderPosts(posts, postsContainer);
+}
+
+// Create the throttled function to check for new posts
+const checkForNewPostsThrottled = throttle(checkForNewPosts, 5000);
+
+// Initialize post polling
+function initPostPolling() {
+  if (!postsContainer) {
+    console.error("Posts container not found");
+    return;
+  }
+  
+  // Initial fetch
+  checkForNewPostsThrottled();
+  
+  // Set up interval for continuous polling
+  setInterval(checkForNewPostsThrottled, 5000);
+  
+  // Also check when the user interacts with the page
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkForNewPostsThrottled();
+    }
+  });
+}
+
+// Initialize when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+  initPostPolling();
+  createMainPage();
+});
