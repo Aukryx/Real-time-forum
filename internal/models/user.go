@@ -19,6 +19,7 @@ type User struct {
 type Post struct {
 	ID            int
 	UserID        int
+	Username      string
 	Title         string
 	Body          string
 	Status        string

@@ -1,6 +1,6 @@
-import { createWelcomePage } from "./welcome.js";
-import { removeWelcomePage } from "./welcome.js";
-import { createMainPage } from "./main.js";
+import { createWelcomePage } from "../welcome.js";
+import { removeWelcomePage } from "../welcome.js";
+import { createMainPage } from "../main.js";
 
 // Function that creates a div showing the registration result message
 export function showMessage(text, isSuccess) {
@@ -368,6 +368,6 @@ export function replaceWithRegistrationForm() {
   let registerButtontest = document.getElementById('backButton')
   if (registerButtontest) {
     registerButtontest.addEventListener('click', () => {
-        createWelcomePage()
-      })
+      createWelcomePage()
+    })
   }

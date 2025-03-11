@@ -1,11 +1,23 @@
 // web/static/js/welcome.js - Create the welcome page elements dynamically
-import { login } from "./login.js";
-import { replaceWithRegistrationForm } from "./register.js";
+import { login } from "./auth/login.js";
+import { createMainPage } from "./main.js";
+import { replaceWithRegistrationForm } from "./auth/register.js";
+import { checkSession } from "./auth/checkSession.js";
 
-document.addEventListener('DOMContentLoaded', function() {
-  createWelcomePage();
+document.addEventListener('DOMContentLoaded', async function() {
+  // Check if user is already logged in
+  const isLoggedIn = await checkSession();
+  
+  if (isLoggedIn) {
+    // User is logged in, show main page
+    createMainPage();
+  } else {
+    // User is not logged in, show welcome/login page
+    createWelcomePage();
+  }
 });
 
+// Function to create the welcome page
 export function createWelcomePage() {
   // Set body styles first
   document.body.style.fontFamily = 'Arial, sans-serif';
@@ -291,6 +303,7 @@ export function createWelcomePage() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
+    // Checking if both fields are filled
     if (username && password) {
       console.log('Login attempt:', { username, password });
       // alert(`Login attempt with username: ${username}`);
@@ -302,18 +315,7 @@ export function createWelcomePage() {
   });
   
   registerButton.addEventListener('click', function() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (username && password) {
-      console.log('Registration attempt:', { username, password });
-
-      // alert(`Registration attempt with username: ${username}`);
-      // For a real application, you would handle registration logic here
-    } else {
-      replaceWithRegistrationForm()
-      // alert('Please enter both username and password');
-    }
+    replaceWithRegistrationForm()
   });
   
   // Add all elements to body

@@ -1,5 +1,3 @@
-// web/static/js/user.js
-
 export async function UserSelectAll() {
   try {
       const response = await fetch('/api/users', {

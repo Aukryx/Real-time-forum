@@ -1,7 +1,7 @@
 // web/static/js/main.js
-import { UserSelectAll } from './user.js';
-import { fetchPosts, createPost } from './forum.js';
+import { fetchPosts } from './fetch/forum.js';
 import { createWelcomePage, removeWelcomePage } from './welcome.js';
+import { populateUserList } from './user_list.js';
 
 export function createMainPage() {
   // Set body styles
@@ -99,11 +99,19 @@ export function createMainPage() {
   // Post Creation Input
   const postInputContainer = document.createElement('div');
   postInputContainer.style.marginBottom = '1rem';
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'newPostTitle';
+  titleInput.placeholder = 'Post title...';
+  titleInput.style.width = '100%';
+  titleInput.style.padding = '0.5rem';
+  titleInput.style.marginBottom = '0.5rem';
   
   const postInput = document.createElement('input');
   postInput.type = 'text';
   postInput.id = 'newPostInput';
-  postInput.placeholder = 'Create a new post...';
+  postInput.placeholder = 'Post content...';
   postInput.style.width = '100%';
   postInput.style.padding = '0.5rem';
   postInput.style.marginBottom = '0.5rem';
@@ -113,6 +121,7 @@ export function createMainPage() {
   submitPostButton.id = 'submitPostButton';
   submitPostButton.style.padding = '0.5rem 1rem';
   
+  postInputContainer.appendChild(titleInput);
   postInputContainer.appendChild(postInput);
   postInputContainer.appendChild(submitPostButton);
   
@@ -124,8 +133,14 @@ export function createMainPage() {
   postList.style.padding = '0';
   postList.id = 'postList';
   
+  const postsContainer = document.createElement('div');
+  postsContainer.id = 'posts-container';
+  postsContainer.style.marginTop = '1rem';
+  postsContainer.style.width = '100%';  // Ensure container has width
+
   centerColumn.appendChild(postInputContainer);
   centerColumn.appendChild(postsTitle);
+  centerColumn.appendChild(postsContainer);
   centerColumn.appendChild(postList);
   
   // Right Column - Random Images
@@ -166,109 +181,17 @@ export function createMainPage() {
   document.body.appendChild(contentWrapper);
   document.body.appendChild(footer);
   
-  // Populate content
+  // Initialize everything after DOM elements are created
+  initializePage();
+}
+
+// New function to handle initialization
+function initializePage() {
   populateUserList();
   populatePostList();
   populateImageList();
   setupPostCreation();
-}
-
-export async function populateUserList() {
-  const userList = document.getElementById('userList');
-  userList.innerHTML = ''; // Clear existing users
-  
-  try {
-    const userData = await UserSelectAll();
-    
-    // Add debugging
-    console.log('Fetched user data:', userData);
-    
-    // Create a section for connected users
-    if (userData.connectedUsers && userData.connectedUsers.length > 0) {
-      const connectedHeader = document.createElement('li');
-      connectedHeader.textContent = 'Connected Users';
-      connectedHeader.style.fontWeight = 'bold';
-      connectedHeader.style.padding = '0.5rem';
-      connectedHeader.style.backgroundColor = '#f0f0f0';
-      userList.appendChild(connectedHeader);
-      
-      userData.connectedUsers.forEach(user => {
-        console.log('Processing connected user:', user);
-        const li = createUserListItem(user, true);
-        userList.appendChild(li);
-      });
-    }
-    
-    // Create a section for disconnected users
-    if (userData.disconnectedUsers && userData.disconnectedUsers.length > 0) {
-      const disconnectedHeader = document.createElement('li');
-      disconnectedHeader.textContent = 'Disconnected Users';
-      disconnectedHeader.style.fontWeight = 'bold';
-      disconnectedHeader.style.padding = '0.5rem';
-      disconnectedHeader.style.backgroundColor = '#f0f0f0';
-      userList.appendChild(disconnectedHeader);
-      
-      userData.disconnectedUsers.forEach(user => {
-        console.log('Processing disconnected user:', user);
-        const li = createUserListItem(user, false);
-        userList.appendChild(li);
-      });
-    }
-    
-    // If no users were found in either category
-    if ((!userData.connectedUsers || userData.connectedUsers.length === 0) && 
-        (!userData.disconnectedUsers || userData.disconnectedUsers.length === 0)) {
-      const li = document.createElement('li');
-      li.textContent = 'No users found';
-      userList.appendChild(li);
-    }
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    const li = document.createElement('li');
-    li.textContent = 'Error loading users';
-    userList.appendChild(li);
-  }
-}
-
-function createUserListItem(user, isConnected) {
-  const li = document.createElement('li');
-  
-  // Create a flex container for the status circle and username
-  li.style.display = 'flex';
-  li.style.alignItems = 'center';
-  li.style.padding = '0.5rem';
-  li.style.borderBottom = '1px solid #ddd';
-  li.style.cursor = 'pointer';
-  
-  // Create status circle
-  const statusCircle = document.createElement('div');
-  statusCircle.style.width = '12px';
-  statusCircle.style.height = '12px';
-  statusCircle.style.borderRadius = '50%';
-  statusCircle.style.marginRight = '10px';
-  
-  // Set color based on connection status
-  if (isConnected) {
-    statusCircle.style.backgroundColor = '#2ecc71'; // Green for connected
-  } else {
-    statusCircle.style.backgroundColor = '#95a5a6'; // Gray for disconnected
-  }
-  
-  // Username text
-  const userText = document.createElement('span');
-  userText.textContent = user.nickName || user.NickName || user.name || user.username || `User ${user.id}` || 'Unknown User';
-  
-  // Add elements to the list item
-  li.appendChild(statusCircle);
-  li.appendChild(userText);
-  
-  // Add click event to the list item
-  li.addEventListener('click', () => {
-    console.log('Selected user:', user);
-    // You can add additional functionality here, like showing user details
-  });
-  
-  return li;
+  initPostPolling();
 }
 
 async function populatePostList() {
@@ -300,9 +223,18 @@ async function populatePostList() {
         
         const content = document.createElement('p');
         content.textContent = post.Body || 'No content';
+
+        const date = new Date(post.CreatedAt);
+        console.log("post: ", post);
+        
+        console.log("date: ", date);
+        
+        const formattedDate = date.getFullYear() + ' ' + 
+          String(date.getMonth() + 1).padStart(2, '0') + ' ' + 
+          String(date.getDate()).padStart(2, '0');
         
         const metadata = document.createElement('small');
-        metadata.textContent = `By: User ${post.UserID} | Date: ${post.CreatedAt}`;
+        metadata.textContent = `By: ${post.Username} | Date: ${formattedDate}`;
         
         li.appendChild(title);
         li.appendChild(content);
@@ -357,29 +289,109 @@ function populateImageList() {
 }
 
 function setupPostCreation() {
+  const titleInput = document.getElementById('newPostTitle');
   const postInput = document.getElementById('newPostInput');
   const submitButton = document.getElementById('submitPostButton');
   
   submitButton.addEventListener('click', async () => {
+    const postTitle = titleInput.value.trim();
     const postContent = postInput.value.trim();
+
+    console.log("Post Content: ", postContent);
     
-    if (postContent) {
+    if (postTitle && postContent) {
       try {
-        await createPost({
-          title: 'New Post', // You might want to add a title input
-          content: postContent,
-          author: 'CurrentUser' // Replace with actual logged-in user
+        const response = await fetch('/api/postCreation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: postTitle,
+            content: postContent
+          }),
         });
         
-        postInput.value = ''; // Clear input
-        await populatePostList(); // Refresh post list
+        const newPost = await response.json();
+        // console.log('Post created:', newPost);
+        
+        // Clear the input fields after successful submission
+        titleInput.value = '';
+        postInput.value = '';
+        
+        // Refresh the post list to show the new post
+        populatePostList();
       } catch (error) {
         console.error('Error creating post:', error);
-        // Optional: Show error to user
       }
+    } else {
+      console.warn('Post title and content are required');
     }
   });
 }
 
-// Ensure the page is created when the DOM is loaded
-document.addEventListener('DOMContentLoaded', createMainPage);
+// Post submission functionality
+const titleInput = document.getElementById('newPostTitle')
+const postInput = document.getElementById('newPostInput');
+const submitButton = document.getElementById('submitPostButton');
+// const postsContainer = document.getElementById('posts-container');
+
+// Function to submit a new post
+// Replace your current submitPost function with this one
+async function submitPost() {
+  const postTitle = titleInput.value.trim();
+  const postContent = postInput.value.trim();
+
+  console.log("Post Content: ", postContent);
+  
+    
+  if (postTitle && postContent) {
+    const data = {
+      title: postTitle,  // Changed to lowercase to match the setupPostCreation function
+      content: postContent  // Changed to 'content' to match the setupPostCreation function
+    };
+
+    try {
+      const response = await fetch('/api/postCreation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error (${response.status}): ${errorText}`);
+        return;
+      }
+        
+      // Try parsing the response as JSON
+      try {
+        // const newPost = await response.json();
+        // console.log('Post created:', newPost);
+      } catch (parseError) {
+        console.log('Response was not JSON, but post might have been created');
+      }
+      
+      // Clear the input fields after submission attempt
+      titleInput.value = '';
+      postInput.value = '';
+      
+      // Refresh posts
+      checkForNewPosts();
+      
+    } catch (error) {
+      console.error('Network error:', error);
+    }
+  } else {
+    console.warn('Post title and content are required');
+  }
+}
+
+// Add event listener to the submit button
+if (submitButton) {
+  submitButton.addEventListener('click', submitPost);
+}
+
+// Update the DOM loaded event handler
+document.addEventListener('DOMContentLoaded', function() {
+  createMainPage();
+  // Remove initPostPolling from here since it's now called in createMainPage
+});

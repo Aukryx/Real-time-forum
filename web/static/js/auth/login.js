@@ -1,5 +1,5 @@
-import { createMainPage } from "./main.js";
-import { removeWelcomePage } from "./welcome.js";
+import { createMainPage } from "../main.js";
+import { removeWelcomePage } from "../welcome.js";
 
 // Get reference to the register and login buttons
 const loginButton = document.querySelector('#loginForm');
