@@ -33,16 +33,6 @@ func createPostsTable(db *sql.DB) {
 	executeSQL(db, createPostCategoryTableSQL)
 }
 
-type Post struct {
-	ID        int
-	UserID    int
-	Title     string
-	Body      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Image     string
-}
-
 // Create - Insert a new post
 func PostInsert(userID int, uuid, title, body, imagePath string) (*models.Post, error) {
 	db := SetupDatabase()
@@ -90,7 +80,7 @@ func PostInsert(userID int, uuid, title, body, imagePath string) (*models.Post, 
 }
 
 // Read - Get post by ID
-func PostSelectByID(postID int) (*Post, error) {
+func PostSelectByID(postID int) (*models.Post, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -102,12 +92,12 @@ func PostSelectByID(postID int) (*Post, error) {
 	query := `SELECT id, user_id, title, body, createdAt, updatedAt, image
              FROM post WHERE id = ?`
 
-	var post Post
+	var post models.Post
 	var createdAtStr, updatedAtStr string
 
 	err = tx.QueryRow(query, postID).Scan(
 		&post.ID, &post.UserID, &post.Title, &post.Body,
-		&createdAtStr, &updatedAtStr, &post.Image,
+		&createdAtStr, &updatedAtStr, &post.ImagePath,
 	)
 
 	if err != nil {
@@ -207,7 +197,7 @@ func PostSelectAll() ([]models.Post, error) {
 }
 
 // Read - Get posts by user ID
-func PostSelectByUserID(userID int) ([]*Post, error) {
+func PostSelectByUserID(userID int) ([]*models.Post, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -226,13 +216,13 @@ func PostSelectByUserID(userID int) ([]*Post, error) {
 	}
 	defer rows.Close()
 
-	var posts []*Post
+	var posts []*models.Post
 	for rows.Next() {
-		post := &Post{}
+		post := &models.Post{}
 		var createdAtStr, updatedAtStr string
 
 		if err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Body,
-			&createdAtStr, &updatedAtStr, &post.Image); err != nil {
+			&createdAtStr, &updatedAtStr, &post.ImagePath); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error scanning post: %v", err)
 		}
