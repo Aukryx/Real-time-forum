@@ -1,4 +1,4 @@
-import { createWelcomePage, removeWelcomePage } from "./welcome.js";
+import { createWelcomePage, removeWelcomePage } from "../welcome.js";
 
 let logoutButton = document.getElementById('logout')
 

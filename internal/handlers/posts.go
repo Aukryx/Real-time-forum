@@ -16,6 +16,7 @@ import (
 type Post struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
+	Username  string    `json:"user"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -26,7 +27,7 @@ type Post struct {
 // PostRequest represents the incoming request structure
 type PostRequest struct {
 	Title string `json:"title"`
-	Body  string `json:"body"`
+	Body  string `json:"content"`
 }
 
 // HandleFetchPosts handles fetching all posts
@@ -36,6 +37,8 @@ func HandleFetchPosts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// fmt.Println("posts: ", posts)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
@@ -62,7 +65,7 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 		Body:  postReq.Body,
 	}
 
-	fmt.Println("post: ", post)
+	// fmt.Println("post: ", post)
 
 	// Checking the cookie values
 	cookie, err := r.Cookie("session_id")
@@ -74,7 +77,7 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	id := db.UserIDWithUUID(cookie.Value)
 
 	// Ensure you're using the correct column names
-	createdPost, err := db.PostInsert(id, post.Title, post.Body, post.ImagePath)
+	createdPost, err := db.PostInsert(id, cookie.Value, post.Title, post.Body, post.ImagePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,10 +123,10 @@ func HandleFetchNewPosts(w http.ResponseWriter, r *http.Request) {
 // getNewPosts fetches posts newer than the specified ID
 func getNewPosts(lastID int) ([]Post, error) {
 	query := `
-		SELECT id, user_id, title, body, createdAt, updatedAt, image
-		FROM post
-		WHERE id > ?
-		ORDER BY id DESC
+		SELECT p.id, p.user_id, p.user, p.title, p.body, p.createdAt, p.updatedAt, p.image
+		FROM post p
+		WHERE p.id > ?
+		ORDER BY p.id DESC
 		LIMIT 20
 	`
 
@@ -141,6 +144,7 @@ func getNewPosts(lastID int) ([]Post, error) {
 		err := rows.Scan(
 			&post.ID,
 			&post.UserID,
+			&post.Username,
 			&post.Title,
 			&post.Body,
 			&createdAtStr,

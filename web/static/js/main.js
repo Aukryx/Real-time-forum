@@ -1,7 +1,7 @@
 // web/static/js/main.js
-import { UserSelectAll } from './user.js';
-import { fetchPosts, createPost } from './forum.js';
+import { fetchPosts } from './fetch/forum.js';
 import { createWelcomePage, removeWelcomePage } from './welcome.js';
+import { populateUserList } from './user_list.js';
 
 export function createMainPage() {
   // Set body styles
@@ -136,10 +136,11 @@ export function createMainPage() {
   const postsContainer = document.createElement('div');
   postsContainer.id = 'posts-container';
   postsContainer.style.marginTop = '1rem';
+  postsContainer.style.width = '100%';  // Ensure container has width
 
   centerColumn.appendChild(postInputContainer);
   centerColumn.appendChild(postsTitle);
-  centerColumn.appendChild(postsContainer); // Add this line
+  centerColumn.appendChild(postsContainer);
   centerColumn.appendChild(postList);
   
   // Right Column - Random Images
@@ -180,109 +181,17 @@ export function createMainPage() {
   document.body.appendChild(contentWrapper);
   document.body.appendChild(footer);
   
-  // Populate content
+  // Initialize everything after DOM elements are created
+  initializePage();
+}
+
+// New function to handle initialization
+function initializePage() {
   populateUserList();
   populatePostList();
   populateImageList();
   setupPostCreation();
-}
-
-export async function populateUserList() {
-  const userList = document.getElementById('userList');
-  userList.innerHTML = ''; // Clear existing users
-  
-  try {
-    const userData = await UserSelectAll();
-    
-    // Add debugging
-    console.log('Fetched user data:', userData);
-    
-    // Create a section for connected users
-    if (userData.connectedUsers && userData.connectedUsers.length > 0) {
-      const connectedHeader = document.createElement('li');
-      connectedHeader.textContent = 'Connected Users';
-      connectedHeader.style.fontWeight = 'bold';
-      connectedHeader.style.padding = '0.5rem';
-      connectedHeader.style.backgroundColor = '#f0f0f0';
-      userList.appendChild(connectedHeader);
-      
-      userData.connectedUsers.forEach(user => {
-        console.log('Processing connected user:', user);
-        const li = createUserListItem(user, true);
-        userList.appendChild(li);
-      });
-    }
-    
-    // Create a section for disconnected users
-    if (userData.disconnectedUsers && userData.disconnectedUsers.length > 0) {
-      const disconnectedHeader = document.createElement('li');
-      disconnectedHeader.textContent = 'Disconnected Users';
-      disconnectedHeader.style.fontWeight = 'bold';
-      disconnectedHeader.style.padding = '0.5rem';
-      disconnectedHeader.style.backgroundColor = '#f0f0f0';
-      userList.appendChild(disconnectedHeader);
-      
-      userData.disconnectedUsers.forEach(user => {
-        console.log('Processing disconnected user:', user);
-        const li = createUserListItem(user, false);
-        userList.appendChild(li);
-      });
-    }
-    
-    // If no users were found in either category
-    if ((!userData.connectedUsers || userData.connectedUsers.length === 0) && 
-        (!userData.disconnectedUsers || userData.disconnectedUsers.length === 0)) {
-      const li = document.createElement('li');
-      li.textContent = 'No users found';
-      userList.appendChild(li);
-    }
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    const li = document.createElement('li');
-    li.textContent = 'Error loading users';
-    userList.appendChild(li);
-  }
-}
-
-function createUserListItem(user, isConnected) {
-  const li = document.createElement('li');
-  
-  // Create a flex container for the status circle and username
-  li.style.display = 'flex';
-  li.style.alignItems = 'center';
-  li.style.padding = '0.5rem';
-  li.style.borderBottom = '1px solid #ddd';
-  li.style.cursor = 'pointer';
-  
-  // Create status circle
-  const statusCircle = document.createElement('div');
-  statusCircle.style.width = '12px';
-  statusCircle.style.height = '12px';
-  statusCircle.style.borderRadius = '50%';
-  statusCircle.style.marginRight = '10px';
-  
-  // Set color based on connection status
-  if (isConnected) {
-    statusCircle.style.backgroundColor = '#2ecc71'; // Green for connected
-  } else {
-    statusCircle.style.backgroundColor = '#95a5a6'; // Gray for disconnected
-  }
-  
-  // Username text
-  const userText = document.createElement('span');
-  userText.textContent = user.nickName || user.NickName || user.name || user.username || `User ${user.id}` || 'Unknown User';
-  
-  // Add elements to the list item
-  li.appendChild(statusCircle);
-  li.appendChild(userText);
-  
-  // Add click event to the list item
-  li.addEventListener('click', () => {
-    console.log('Selected user:', user);
-    // You can add additional functionality here, like showing user details
-  });
-  
-  return li;
+  initPostPolling();
 }
 
 async function populatePostList() {
@@ -314,9 +223,18 @@ async function populatePostList() {
         
         const content = document.createElement('p');
         content.textContent = post.Body || 'No content';
+
+        const date = new Date(post.CreatedAt);
+        console.log("post: ", post);
+        
+        console.log("date: ", date);
+        
+        const formattedDate = date.getFullYear() + ' ' + 
+          String(date.getMonth() + 1).padStart(2, '0') + ' ' + 
+          String(date.getDate()).padStart(2, '0');
         
         const metadata = document.createElement('small');
-        metadata.textContent = `By: User ${post.UserID} | Date: ${post.CreatedAt}`;
+        metadata.textContent = `By: ${post.Username} | Date: ${formattedDate}`;
         
         li.appendChild(title);
         li.appendChild(content);
@@ -378,6 +296,8 @@ function setupPostCreation() {
   submitButton.addEventListener('click', async () => {
     const postTitle = titleInput.value.trim();
     const postContent = postInput.value.trim();
+
+    console.log("Post Content: ", postContent);
     
     if (postTitle && postContent) {
       try {
@@ -391,7 +311,7 @@ function setupPostCreation() {
         });
         
         const newPost = await response.json();
-        console.log('Post created:', newPost);
+        // console.log('Post created:', newPost);
         
         // Clear the input fields after successful submission
         titleInput.value = '';
@@ -408,30 +328,20 @@ function setupPostCreation() {
   });
 }
 
-// Throttle function to limit the rate at which we call the API
-function throttle(callback, delay) {
-  let lastCall = 0;
-  return function(...args) {
-    const now = new Date().getTime();
-    if (now - lastCall < delay) {
-      return;
-    }
-    lastCall = now;
-    return callback(...args);
-  };
-}
-
 // Post submission functionality
 const titleInput = document.getElementById('newPostTitle')
 const postInput = document.getElementById('newPostInput');
 const submitButton = document.getElementById('submitPostButton');
-const postsContainer = document.getElementById('posts-container');
+// const postsContainer = document.getElementById('posts-container');
 
 // Function to submit a new post
 // Replace your current submitPost function with this one
 async function submitPost() {
   const postTitle = titleInput.value.trim();
   const postContent = postInput.value.trim();
+
+  console.log("Post Content: ", postContent);
+  
     
   if (postTitle && postContent) {
     const data = {
@@ -454,8 +364,8 @@ async function submitPost() {
         
       // Try parsing the response as JSON
       try {
-        const newPost = await response.json();
-        console.log('Post created:', newPost);
+        // const newPost = await response.json();
+        // console.log('Post created:', newPost);
       } catch (parseError) {
         console.log('Response was not JSON, but post might have been created');
       }
@@ -480,96 +390,8 @@ if (submitButton) {
   submitButton.addEventListener('click', submitPost);
 }
 
-// Function to fetch new posts from the server
-async function fetchNewPosts(lastPostId = 0) {
-  try {
-    const response = await fetch(`/api/posts/new?lastId=${lastPostId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching new posts:', error);
-    return { posts: [] };
-  }
-}
-
-// Function to render posts to the page
-function renderPosts(posts, container) {
-  if (!posts || posts.length === 0) return;
-  
-  posts.forEach(post => {
-    const postElement = document.createElement('div');
-    postElement.className = 'post';
-    postElement.setAttribute('data-id', post.id);
-    postElement.innerHTML = `
-      <h3>${post.title}</h3>
-      <p class="post-meta">Posted by User #${post.user_id} on ${new Date(post.createdAt).toLocaleString()}</p>
-      <div class="post-body">${post.body}</div>
-      ${post.image ? `<img src="${post.image}" alt="Post image" class="post-image">` : ''}
-    `;
-    container.prepend(postElement);
-  });
-}
-
-// Get the largest post ID currently in the DOM
-function getLatestPostId() {
-  const posts = document.querySelectorAll('.post');
-  let maxId = 0;
-  
-  posts.forEach(post => {
-    const postId = parseInt(post.getAttribute('data-id') || '0');
-    if (postId > maxId) {
-      maxId = postId;
-    }
-  });
-  
-  return maxId;
-}
-
-// Function to check for new posts
-async function checkForNewPosts() {
-  if (!postsContainer) return;
-  
-  const latestPostId = getLatestPostId();
-  const { posts } = await fetchNewPosts(latestPostId);
-  renderPosts(posts, postsContainer);
-}
-
-// Create the throttled function to check for new posts
-const checkForNewPostsThrottled = throttle(checkForNewPosts, 5000);
-
-// Initialize post polling
-function initPostPolling() {
-  if (!postsContainer) {
-    console.error("Posts container not found");
-    return;
-  }
-  
-  // Initial fetch
-  checkForNewPostsThrottled();
-  
-  // Set up interval for continuous polling
-  setInterval(checkForNewPostsThrottled, 5000);
-  
-  // Also check when the user interacts with the page
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      checkForNewPostsThrottled();
-    }
-  });
-}
-
-// Initialize when the DOM is fully loaded
+// Update the DOM loaded event handler
 document.addEventListener('DOMContentLoaded', function() {
-  initPostPolling();
   createMainPage();
+  // Remove initPostPolling from here since it's now called in createMainPage
 });

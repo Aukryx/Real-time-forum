@@ -8,7 +8,6 @@ import (
 )
 
 func LogOutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("test")
 	db := db.SetupDatabase()
 
 	// Checking the cookie values

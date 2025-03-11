@@ -310,9 +310,9 @@ func UserNicknameWithUUID(uuid string) string {
 
 	// Unlogging the User in the database
 	state := `SELECT nickName FROM user WHERE uuid = ?`
-	err_db := db.QueryRow(state, 0, uuid).Scan(&nickName)
+	err_db := db.QueryRow(state, uuid).Scan(&nickName)
 	if err_db != nil {
-		fmt.Printf("Error logging out")
+		fmt.Println("Error getting user's nickname")
 	}
 
 	return nickName
@@ -325,9 +325,9 @@ func UserIDWithUUID(uuid string) int {
 
 	// Unlogging the User in the database
 	state := `SELECT id FROM user WHERE uuid = ?`
-	err_db := db.QueryRow(state, 0, uuid).Scan(&id)
+	err_db := db.QueryRow(state, uuid).Scan(&id)
 	if err_db != nil {
-		fmt.Printf("Error logging out")
+		fmt.Printf("Error getting the user's id")
 	}
 
 	return id

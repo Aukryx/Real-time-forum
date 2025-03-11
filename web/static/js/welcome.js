@@ -1,25 +1,8 @@
 // web/static/js/welcome.js - Create the welcome page elements dynamically
-import { login } from "./login.js";
+import { login } from "./auth/login.js";
 import { createMainPage } from "./main.js";
-import { replaceWithRegistrationForm } from "./register.js";
-
-// Function to check if user is logged in
-export async function checkSession() {
-  try {
-    const response = await fetch('/api/check-session', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      // Include credentials to send cookies
-      credentials: 'include'
-    });
-    
-    const result = await response.json();
-    return result.loggedIn; // Should return true if session is valid
-  } catch (error) {
-    console.error('Session check error:', error);
-    return false; // Assume not logged in if there's an error
-  }
-}
+import { replaceWithRegistrationForm } from "./auth/register.js";
+import { checkSession } from "./auth/checkSession.js";
 
 document.addEventListener('DOMContentLoaded', async function() {
   // Check if user is already logged in
@@ -34,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
+// Function to create the welcome page
 export function createWelcomePage() {
   // Set body styles first
   document.body.style.fontFamily = 'Arial, sans-serif';
@@ -319,6 +303,7 @@ export function createWelcomePage() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
+    // Checking if both fields are filled
     if (username && password) {
       console.log('Login attempt:', { username, password });
       // alert(`Login attempt with username: ${username}`);

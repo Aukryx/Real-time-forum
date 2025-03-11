@@ -10,7 +10,8 @@ import (
 func createPostsTable(db *sql.DB) {
 	createTableSQL := `CREATE TABLE IF NOT EXISTS "post" (
     "id"    INTEGER NOT NULL UNIQUE,
-    "user_id"    INTEGER NOT NULL,
+    "user_id"    TEXT NOT NULL,
+	"user"	TEXT NOT NULL,
     "title"    TEXT NOT NULL,
     "body"    TEXT NOT NULL,
     "createdAt"    DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +44,7 @@ type Post struct {
 }
 
 // Create - Insert a new post
-func PostInsert(userID int, title, body, imagePath string) (*models.Post, error) {
+func PostInsert(userID int, uuid, title, body, imagePath string) (*models.Post, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -52,10 +53,13 @@ func PostInsert(userID int, title, body, imagePath string) (*models.Post, error)
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
+	user := UserNicknameWithUUID(uuid)
+	now := time.Now().Format("2006-01-02 15:04:05") // Fix date format
+
 	// Match the column names in your 'post' table
-	insertSQL := `INSERT INTO post (user_id, title, body, image, createdAt) 
-                  VALUES (?, ?, ?, ?, ?)`
-	result, err := tx.Exec(insertSQL, userID, title, body, imagePath, time.Now())
+	insertSQL := `INSERT INTO post (user_id, user, title, body, image, createdAt) 
+                  VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := tx.Exec(insertSQL, userID, user, title, body, imagePath, now)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error inserting post: %v", err)
@@ -71,13 +75,15 @@ func PostInsert(userID int, title, body, imagePath string) (*models.Post, error)
 		return nil, fmt.Errorf("error committing transaction: %v", err)
 	}
 
+	createdTime, _ := time.Parse("2006-01-02 15:04:05", now)
 	post := &models.Post{
 		ID:        int(postID),
 		UserID:    userID,
+		Username:  user,
 		Title:     title,
 		Body:      body,
 		ImagePath: imagePath,
-		CreatedAt: time.Now(),
+		CreatedAt: createdTime,
 	}
 
 	return post, nil
@@ -157,7 +163,7 @@ func PostSelectAll() ([]models.Post, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
-	query := `SELECT id, user_id, title, body, image, createdAt FROM post ORDER BY createdAt DESC`
+	query := `SELECT id, user_id, user, title, body, image, createdAt FROM post ORDER BY createdAt DESC`
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error querying posts: %v", err)
@@ -169,18 +175,11 @@ func PostSelectAll() ([]models.Post, error) {
 		var post models.Post
 		var createdAtStr string // Declare as string first
 
-		err := rows.Scan(
-			&post.ID,
-			&post.UserID,
-			&post.Title,
-			&post.Body,
-			&post.ImagePath,
-			&post.CreatedAt, // This will now cause an error
-		)
 		// Modify the Scan to use a string
 		err = rows.Scan(
 			&post.ID,
 			&post.UserID,
+			&post.Username,
 			&post.Title,
 			&post.Body,
 			&post.ImagePath,
@@ -190,13 +189,12 @@ func PostSelectAll() ([]models.Post, error) {
 			return nil, fmt.Errorf("error scanning post: %v", err)
 		}
 
-		// Parse the string to time.Time
-		parsedTime, err := time.Parse(time.RFC3339, createdAtStr)
+		// Parse the string to time.Time using correct format
+		post.CreatedAt, err = time.Parse("2006-01-02 15:04:05", createdAtStr)
 		if err != nil {
-			// If parsing fails, use current time or handle as needed
-			parsedTime = time.Now()
+			// If parsing fails, use current time
+			post.CreatedAt = time.Now()
 		}
-		post.CreatedAt = parsedTime
 
 		posts = append(posts, post)
 	}
