@@ -340,8 +340,6 @@ export function replaceWithRegistrationForm() {
     
     // Event listener for back button
     backButton.addEventListener('click', function() {
-      // This would return to the login form
-      // In the original code this would call createWelcomePage()
       createWelcomePage();
     });
     

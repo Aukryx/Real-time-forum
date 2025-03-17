@@ -65,8 +65,6 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 		Body:  postReq.Body,
 	}
 
-	// fmt.Println("post: ", post)
-
 	// Checking the cookie values
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
@@ -76,7 +74,7 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 	id := db.UserIDWithUUID(cookie.Value)
 
-	// Ensure you're using the correct column names
+	// Insert the new post into the database
 	createdPost, err := db.PostInsert(id, cookie.Value, post.Title, post.Body, post.ImagePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,7 +107,7 @@ func HandleFetchNewPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return posts as JSON
-	response := map[string]interface{}{
+	response := map[string]any{
 		"posts": posts,
 	}
 

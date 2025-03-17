@@ -3,7 +3,23 @@ import { createWelcomePage, removeWelcomePage } from './welcome.js';
 import { populateUserList } from './user_list.js';
 import { populatePostList, setupPostCreation } from './posts.js';
 
-export function createMainPage() {
+export async function createMainPage() {
+  const response = await fetch('/api/navbar', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+    },  
+  });
+
+  if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to generate navbar informations: ${errorText}`);
+  }
+
+  const user = await response.json();
+  console.log("Response: ", user);
+  
+
   // Set body styles
   document.body.style.fontFamily = 'Arial, sans-serif';
   document.body.style.margin = '0';
@@ -44,6 +60,13 @@ export function createMainPage() {
   headerButton.style.border = 'none';
   headerButton.style.borderRadius = '4px';
   headerButton.style.cursor = 'pointer';
+
+  const headerName = document.createElement('a');
+  headerName.textContent = user.username;
+  headerName.id = 'username';
+  headerName.style.padding = '0.5rem 3rem';
+  headerName.style.color = 'white';
+  headerName.style.cursor = 'pointer';
   
   // Add hover effect
   headerButton.addEventListener('mouseenter', () => {
@@ -61,6 +84,7 @@ export function createMainPage() {
     createWelcomePage()
   });
   
+  headerRight.appendChild(headerName);
   headerRight.appendChild(headerButton);
   
   // Add both sections to the header

@@ -42,17 +42,14 @@ func setupMux() *http.ServeMux {
 
 	// API routes
 	mux.HandleFunc("/api/users", handlers.GetConnectedAndDisconnectedUsers)
-	// mux.HandleFunc("/api/users", handlers.UserSelectAllHandler)
 	mux.HandleFunc("/api/user", handlers.GetUserByIdHandler)
-	// mux.HandleFunc("/api/posts", handlers.FetchPostsHandler)
-	// mux.HandleFunc("/api/postCreation", handlers.HandleCreatePost)
 	mux.HandleFunc("/api/post", handlers.CreatePostHandler)
 	mux.HandleFunc("/api/comments", handlers.FetchPostCommentsHandler)
 	mux.HandleFunc("/api/comment", handlers.CreateCommentHandler)
-
 	mux.HandleFunc("/api/posts", handlers.HandleFetchPosts)
 	mux.HandleFunc("/api/postCreation", handlers.HandleCreatePost)
 	mux.HandleFunc("/api/posts/new", handlers.HandleFetchNewPosts)
+	mux.HandleFunc("/api/navbar", handlers.NavbarHandler)
 
 	// Session management
 	mux.HandleFunc("/logout", handlers.LogOutHandler)
