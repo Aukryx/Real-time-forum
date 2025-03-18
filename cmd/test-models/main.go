@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"db"
+
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -151,6 +153,7 @@ func testNotificationOperations() {
 func testUserOperations() {
 	// This function will test User CRUD operations
 	fmt.Println("Creating test user...")
+	uuid := uuid.New().String()
 	gender := "male"
 	email := "test@example.com"
 	firstName := "John"
@@ -158,8 +161,9 @@ func testUserOperations() {
 	username := "testuser"
 	password := "password123"
 	role := "user"
+	connected := 1
 
-	userID, err := db.UserInsert(username, gender, firstName, lastName, email, password, role)
+	userID, err := db.UserInsert(uuid, username, gender, firstName, lastName, email, password, role, connected)
 	if err != "nil" {
 		log.Fatalf("Error creating user: %v\n", err)
 	}
@@ -196,13 +200,14 @@ func testPostOperations() {
 	userID := 1
 
 	// Test Insert
+	uuid := uuid.New().String()
 	title := "Test Post"
 	body := "This is a test post content."
 	status := "active"
 	image := "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTE78YNCrH1vg0c4IoHanLTYYioMGLTvZ8V2w&s"
 
 	fmt.Println("Creating post...")
-	postID, err := db.PostInsert(userID, title, body, status)
+	postID, err := db.PostInsert(userID, uuid, title, body, status)
 	if err != nil {
 		log.Fatalf("Error creating post: %v\n", err)
 	}

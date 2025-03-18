@@ -25,7 +25,17 @@ func NavbarHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, errCookie := r.Cookie("session_id")
 	if errCookie != nil {
 		fmt.Println("Error retrieving cookie in navbarhandler: ", errCookie)
+		// Return a response with empty username or some default state
+		response := Response{
+			Username: "", // or "Guest" or whatever makes sense for your application
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return // Important: return here to avoid using cookie.Value when cookie is nil
 	}
+
+	// Only try to get the username if we have a valid cookie
 	username = db.UserNicknameWithUUID(cookie.Value)
 
 	// Create the response

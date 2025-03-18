@@ -215,7 +215,6 @@ function initializePage() {
   populatePostList();
   populateImageList();
   setupPostCreation();
-  initPostPolling();
 }
 
 function populateImageList() {
@@ -259,5 +258,4 @@ function populateImageList() {
 // Update the DOM loaded event handler
 document.addEventListener('DOMContentLoaded', function() {
   createMainPage();
-  // Remove initPostPolling from here since it's now called in createMainPage
 });

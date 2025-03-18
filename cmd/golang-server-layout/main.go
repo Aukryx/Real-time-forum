@@ -5,6 +5,7 @@ import (
 	"handlers"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -44,12 +45,29 @@ func setupMux() *http.ServeMux {
 	mux.HandleFunc("/api/users", handlers.GetConnectedAndDisconnectedUsers)
 	mux.HandleFunc("/api/user", handlers.GetUserByIdHandler)
 	mux.HandleFunc("/api/post", handlers.CreatePostHandler)
-	mux.HandleFunc("/api/comments", handlers.FetchPostCommentsHandler)
-	mux.HandleFunc("/api/comment", handlers.CreateCommentHandler)
 	mux.HandleFunc("/api/posts", handlers.HandleFetchPosts)
 	mux.HandleFunc("/api/postCreation", handlers.HandleCreatePost)
 	mux.HandleFunc("/api/posts/new", handlers.HandleFetchNewPosts)
 	mux.HandleFunc("/api/navbar", handlers.NavbarHandler)
+
+	// Handle comment-related routes
+	mux.HandleFunc("/api/posts/", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// Check if this matches the comments pattern: /api/posts/{postId}/comments
+		if strings.Contains(path, "/comments") {
+			if r.Method == http.MethodGet {
+				handlers.FetchPostCommentsHandler(w, r)
+				return
+			} else if r.Method == http.MethodPost {
+				handlers.CreateCommentHandler(w, r)
+				return
+			}
+		}
+
+		// If we get here, it wasn't a comments request
+		http.NotFound(w, r)
+	})
 
 	// Session management
 	mux.HandleFunc("/logout", handlers.LogOutHandler)
@@ -60,7 +78,7 @@ func setupMux() *http.ServeMux {
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:              ":8081",
+		Addr:              ":8043",
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,
