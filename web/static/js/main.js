@@ -1,7 +1,7 @@
-// web/static/js/main.js
 import { createWelcomePage, removeWelcomePage } from './welcome.js';
 import { populateUserList } from './user_list.js';
 import { populatePostList, setupPostCreation } from './posts.js';
+import { initializePrivateMessaging } from './private_message.js';
 
 export async function createMainPage() {
   const response = await fetch('/api/navbar', {
@@ -215,6 +215,7 @@ function initializePage() {
   populatePostList();
   populateImageList();
   setupPostCreation();
+  initializePrivateMessaging();
 }
 
 function populateImageList() {

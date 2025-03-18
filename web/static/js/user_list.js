@@ -1,5 +1,6 @@
-// web/static/js/user.js
+// web/static/js/user_list.js
 import { UserSelectAll } from "./fetch/user.js";
+import { initializePrivateMessaging } from "./private_message.js";
 
 // Function to populate the user list on the left of the page
 export async function populateUserList() {
@@ -51,6 +52,9 @@ export async function populateUserList() {
       li.textContent = 'No users found';
       userList.appendChild(li);
     }
+    
+    // Initialize private messaging after populating the user list
+    initializePrivateMessaging();
   } catch (error) {
     console.error('Error fetching users:', error);
     const li = document.createElement('li');
@@ -92,11 +96,8 @@ export function createUserListItem(user, isConnected) {
   li.appendChild(statusCircle);
   li.appendChild(userText);
   
-  // Add click event to the list item
-  li.addEventListener('click', () => {
-    console.log('Selected user:', user);
-    // You can add additional functionality here, like showing user details
-  });
+  // We don't need to add the click event here anymore
+  // It will be handled by the initializePrivateMessaging function
   
   return li;
 }
