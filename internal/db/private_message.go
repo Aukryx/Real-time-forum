@@ -2,14 +2,16 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"models"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
-// Note: Your current schema is questionable - having body1 and body2 fields
-// suggests you're trying to store both sides of a conversation in one row,
-// which would be difficult to work with. Let me provide a better approach.
+var clients = models.GetClientMap()
+var mu = models.GetMux()
 
 func createPrivateMessageTable(db *sql.DB) {
 	// A better schema for chat messages
@@ -26,6 +28,75 @@ func createPrivateMessageTable(db *sql.DB) {
 )`
 
 	executeSQL(db, createTableSQL)
+}
+
+func sendPrivateMessage(msg models.PrivateMessage) {
+	// Ensure both sender and receiver are set
+	if msg.Sender == "" || msg.Receiver == "" {
+		fmt.Println("Error: Sender or receiver not specified")
+		return
+	}
+
+	// Check if the receiver exists (is connected)
+	mu.Lock()
+	receiverConn, receiverExists := clients[msg.Receiver]
+	senderConn, senderExists := clients[msg.Sender]
+	mu.Unlock()
+
+	// Create a response message
+	response := models.PrivateMessage{
+		Type:     "private_message",
+		Sender:   msg.Sender,
+		Receiver: msg.Receiver,
+		Message:  msg.Message,
+	}
+
+	// Convert response to JSON
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+
+	// Send message to receiver if they're connected
+	if receiverExists {
+		err := receiverConn.WriteMessage(websocket.TextMessage, jsonResponse)
+		if err != nil {
+			fmt.Println("Error sending message to receiver:", err)
+		}
+	} else {
+		// Store the message in the database for offline delivery
+		// db.StoreOfflineMessage(msg.Sender, msg.Receiver, msg.Message)
+
+		// Notify sender that receiver is offline
+		if senderExists {
+			notifyMsg := models.PrivateMessage{
+				Type:     "system_notification",
+				Sender:   "system",
+				Receiver: msg.Sender,
+				Message:  msg.Receiver + " is currently offline. Message will be delivered when they connect.",
+			}
+
+			notifyJson, _ := json.Marshal(notifyMsg)
+			senderConn.WriteMessage(websocket.TextMessage, notifyJson)
+		}
+	}
+
+	// Also send a copy/confirmation to the sender
+	if senderExists {
+		confirmMsg := models.PrivateMessage{
+			Type:     "message_sent",
+			Sender:   msg.Sender,
+			Receiver: msg.Receiver,
+			Message:  msg.Message,
+		}
+
+		confirmJson, _ := json.Marshal(confirmMsg)
+		senderConn.WriteMessage(websocket.TextMessage, confirmJson)
+	}
+
+	// Log the message
+	fmt.Printf("Private message from %s to %s: %s\n", msg.Sender, msg.Receiver, msg.Message)
 }
 
 func PrivateMessageInsert(senderID, receiverID int, message string) (int, error) {
@@ -76,7 +147,7 @@ func PrivateMessageSelectByID(messageID int) (*models.PrivateMessage, error) {
 	var readInt int
 
 	err = tx.QueryRow(query, messageID).Scan(
-		&message.ID, &message.SenderID, &message.ReceiverID, &message.Message,
+		&message.Type, &message.Sender, &message.Receiver, &message.Message,
 		&createdAtStr, &readInt,
 	)
 
@@ -127,7 +198,7 @@ func PrivateMessageSelectByUserID(userID int) ([]*models.PrivateMessage, error) 
 		var createdAtStr string
 		var readInt int
 
-		if err := rows.Scan(&message.ID, &message.SenderID, &message.ReceiverID,
+		if err := rows.Scan(&message.Type, &message.Sender, &message.Receiver,
 			&message.Message, &createdAtStr, &readInt); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error scanning message: %v", err)

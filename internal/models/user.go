@@ -95,12 +95,3 @@ type Activity struct {
 	Content   string
 	Timestamp string
 }
-
-type PrivateMessage struct {
-	ID         int
-	SenderID   int
-	ReceiverID int
-	Message    string
-	CreatedAt  time.Time
-	Read       bool
-}

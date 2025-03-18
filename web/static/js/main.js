@@ -215,10 +215,6 @@ function initializePage() {
   populatePostList();
   populateImageList();
   setupPostCreation();
-<<<<<<< HEAD
-  // initPostPolling();
-=======
->>>>>>> e2cb64ac82f2bbb657b259a0a7102af9f7a247aa
 }
 
 function populateImageList() {
@@ -260,13 +256,6 @@ function populateImageList() {
 }
 
 // Update the DOM loaded event handler
-<<<<<<< HEAD
 // document.addEventListener('DOMContentLoaded', function() {
 //   createMainPage();
-//   // Remove initPostPolling from here since it's now called in createMainPage
 // });
-=======
-document.addEventListener('DOMContentLoaded', function() {
-  createMainPage();
-});
->>>>>>> e2cb64ac82f2bbb657b259a0a7102af9f7a247aa
