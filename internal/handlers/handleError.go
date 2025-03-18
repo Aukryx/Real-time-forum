@@ -67,10 +67,12 @@ func WithErrorHandling(next http.Handler) http.Handler {
 					}
 				default:
 					// Attempt to match error using errors.As()
-					var customErr *models.CustomError
-					if errors.As(err.(error), &customErr) {
-						statusCode = customErr.StatusCode
-						message = customErr.Message
+					if errVal, ok := err.(error); ok {
+						var customErr *models.CustomError
+						if errors.As(errVal, &customErr) {
+							statusCode = customErr.StatusCode
+							message = customErr.Message
+						}
 					}
 				}
 

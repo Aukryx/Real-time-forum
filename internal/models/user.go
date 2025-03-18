@@ -38,9 +38,9 @@ type Comment struct {
 	ID            int
 	PostID        int
 	UserID        int
-	Content       string
-	CreatedAt     string
-	UpdatedAt     string
+	Body          string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 	LikeDislike   []LikeDislike
 	Username      string
 	LikesCount    int

@@ -4,7 +4,6 @@ import (
 	"db"
 	"encoding/json"
 	"fmt"
-	"log"
 	"models"
 	"net/http"
 	"strconv"
@@ -34,50 +33,47 @@ type PostRequest struct {
 func HandleFetchPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := db.PostSelectAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error fetching posts", http.StatusInternalServerError)
 		return
 	}
-
-	// fmt.Println("posts: ", posts)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
 
 // HandleCreatePost handles the creation of new posts
-// Then modify HandleCreatePost to use this structure:
 func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var postReq PostRequest
 	err := json.NewDecoder(r.Body).Decode(&postReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
-	}
-
-	// Create a Post from the PostRequest
-	post := models.Post{
-		Title: postReq.Title,
-		Body:  postReq.Body,
 	}
 
 	// Checking the cookie values
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		fmt.Println("Error accessing cookie: ", err)
-		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		http.Error(w, "Error retrieving session", http.StatusUnauthorized)
 		return
 	}
-	id := db.UserIDWithUUID(cookie.Value)
+	userID := db.UserIDWithUUID(cookie.Value)
+
+	// Create a Post from the PostRequest
+	post := models.Post{
+		UserID: userID,
+		Title:  postReq.Title,
+		Body:   postReq.Body,
+	}
 
 	// Insert the new post into the database
-	createdPost, err := db.PostInsert(id, cookie.Value, post.Title, post.Body, post.ImagePath)
+	createdPost, err := db.PostInsert(post.UserID, cookie.Value, post.Title, post.Body, post.ImagePath)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error creating post", http.StatusInternalServerError)
 		return
 	}
 
@@ -91,31 +87,22 @@ func HandleFetchNewPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Get last post ID from query parameter
-	lastIDStr := r.URL.Query().Get("lastId")
+	lastIDStr := r.URL.Query().Get("lastID")
 	lastID, err := strconv.Atoi(lastIDStr)
 	if err != nil {
-		// Default to 0 if no valid ID is provided
-		lastID = 0
+		http.Error(w, "Invalid last ID", http.StatusBadRequest)
+		return
 	}
 
 	// Query for new posts
-	posts, err := getNewPosts(lastID)
+	newPosts, err := getNewPosts(lastID)
 	if err != nil {
-		log.Printf("Error fetching posts: %v", err)
-		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+		http.Error(w, "Error fetching new posts", http.StatusInternalServerError)
 		return
 	}
 
 	// Return posts as JSON
-	response := map[string]any{
-		"posts": posts,
-	}
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding JSON: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	json.NewEncoder(w).Encode(newPosts)
 }
 
 // getNewPosts fetches posts newer than the specified ID
@@ -182,14 +169,22 @@ func HandleFetchPostComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleCreateComment(w http.ResponseWriter, r *http.Request) {
-	var comment db.Comment
+	var comment models.Comment
 	err := json.NewDecoder(r.Body).Decode(&comment)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	createdComment, err := db.CommentInsert(comment.UserID, comment.PostID, comment.Body)
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		fmt.Println("Error accessing cookie: ", err)
+		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		return
+	}
+	id := db.UserIDWithUUID(cookie.Value)
+
+	createdComment, err := db.CommentInsert(id, cookie.Value, comment.PostID, comment.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

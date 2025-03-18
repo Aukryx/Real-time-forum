@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"db"
 	"models"
@@ -101,23 +102,39 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(createdPost)
 }
 
+// internal/handlers/api.go
+// Fix the FetchPostCommentsHandler function to correctly extract the post ID
+
 func FetchPostCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Extract post ID from query parameter
-	idStr := r.URL.Query().Get("postId")
-	postID, err := strconv.Atoi(idStr)
+	// Extract post ID from URL path - format: /api/posts/{postId}/comments
+	path := r.URL.Path
+
+	// Split the path and validate it has enough parts
+	pathParts := strings.Split(path, "/")
+
+	// Validate path has enough parts (should be like ["", "api", "posts", "{postId}", "comments"])
+	if len(pathParts) < 5 || pathParts[1] != "api" || pathParts[2] != "posts" || pathParts[4] != "comments" {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	// The postId should be at index 3 in the path parts array
+	postIDStr := pathParts[3]
+	postID, err := strconv.Atoi(postIDStr)
 	if err != nil {
 		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
 
+	// Now fetch comments with the extracted postID
 	comments, err := db.CommentSelectByPostID(postID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error fetching comments: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -127,20 +144,50 @@ func FetchPostCommentsHandler(w http.ResponseWriter, r *http.Request) {
 
 func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract post ID from URL path - format: /api/posts/{postId}/comments
+	path := r.URL.Path
+	pathParts := strings.Split(path, "/")
+
+	// Validate path structure
+	if len(pathParts) < 4 {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	// The postId should be at index 3 in the path parts array
+	postIDStr := pathParts[3]
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
 
 	var comment models.Comment
-	err := json.NewDecoder(r.Body).Decode(&comment)
+	err = json.NewDecoder(r.Body).Decode(&comment)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	createdComment, err := db.CommentInsert(comment.UserID, comment.PostID, comment.Content)
+	// Set the postID from the URL
+	comment.PostID = postID
+
+	// Checking the cookie values
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error retrieving session", http.StatusUnauthorized)
+		return
+	}
+	userID := db.UserIDWithUUID(cookie.Value)
+
+	// Insert the new comment into the database
+	createdComment, err := db.CommentInsert(userID, cookie.Value, comment.PostID, comment.Body)
+	if err != nil {
+		http.Error(w, "Error creating comment", http.StatusInternalServerError)
 		return
 	}
 

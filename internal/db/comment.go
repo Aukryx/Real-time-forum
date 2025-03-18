@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"models"
 	"time"
 )
 
@@ -10,6 +11,7 @@ func createCommentsTable(db *sql.DB) {
 	createTableSQL := `CREATE TABLE IF NOT EXISTS "comment" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user_id"	INTEGER NOT NULL,
+	"user"	TEXT NOT NULL,
 	"post_id"	INTEGER NOT NULL,
 	"body"	TEXT NOT NULL,
 	"createdAt"	NUMERIC DEFAULT CURRENT_TIMESTAMP,
@@ -21,47 +23,8 @@ func createCommentsTable(db *sql.DB) {
 	executeSQL(db, createTableSQL)
 }
 
-type Comment struct {
-	ID        int
-	UserID    int
-	PostID    int
-	Body      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 // Create - Insert a new comment
-func CommentInsert(userID, postID int, body string) (int, error) {
-	db := SetupDatabase()
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return 0, fmt.Errorf("error starting transaction: %v", err)
-	}
-
-	createSQL := `INSERT INTO comment (user_id, post_id, body) VALUES (?, ?, ?)`
-	result, err := tx.Exec(createSQL, userID, postID, body)
-	if err != nil {
-		tx.Rollback()
-		return 0, fmt.Errorf("error executing query: %v", err)
-	}
-
-	commentID, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return 0, fmt.Errorf("error getting last inserted comment ID: %v", err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return 0, fmt.Errorf("error committing transaction: %v", err)
-	}
-
-	return int(commentID), nil
-}
-
-// Read - Get comment by ID
-func CommentSelectByID(commentID int) (*Comment, error) {
+func CommentInsert(userID int, uuid string, postID int, body string) (*models.Comment, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -70,14 +33,59 @@ func CommentSelectByID(commentID int) (*Comment, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, post_id, body, createdAt, updatedAt
+	user := UserNicknameWithUUID(uuid)
+	now := time.Now().Format("2006-01-02 15:04:05") // Fix date format
+
+	// Match the column names in your 'comment' table
+	insertSQL := `INSERT INTO comment (user_id, user, post_id, body, createdAt) 
+                  VALUES (?, ?, ?, ?, ?)`
+	result, err := tx.Exec(insertSQL, userID, user, postID, body, now)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error inserting comment: %v", err)
+	}
+
+	commentID, err := result.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("error getting last insert ID: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	createdTime, _ := time.Parse("2006-01-02 15:04:05", now)
+	comment := &models.Comment{
+		ID:        int(commentID),
+		UserID:    userID,
+		Username:  user,
+		PostID:    postID,
+		Body:      body,
+		CreatedAt: createdTime,
+	}
+
+	return comment, nil
+}
+
+// Read - Get comment by ID
+func CommentSelectByID(commentID int) (*models.Comment, error) {
+	db := SetupDatabase()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("error starting transaction: %v", err)
+	}
+
+	query := `SELECT id, user_id, user, post_id, body, createdAt, updatedAt
              FROM comment WHERE id = ?`
 
-	var comment Comment
+	var comment models.Comment
 	var createdAtStr, updatedAtStr string
 
 	err = tx.QueryRow(query, commentID).Scan(
-		&comment.ID, &comment.UserID, &comment.PostID, &comment.Body,
+		&comment.ID, &comment.UserID, &comment.Username, &comment.PostID, &comment.Body,
 		&createdAtStr, &updatedAtStr,
 	)
 
@@ -101,7 +109,7 @@ func CommentSelectByID(commentID int) (*Comment, error) {
 }
 
 // Read - Get comments by post ID
-func CommentSelectByPostID(postID int) ([]*Comment, error) {
+func CommentSelectByPostID(postID int) ([]*models.Comment, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -110,7 +118,7 @@ func CommentSelectByPostID(postID int) ([]*Comment, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, post_id, body, createdAt, updatedAt
+	query := `SELECT id, user_id, user, post_id, body, createdAt, updatedAt
              FROM comment WHERE post_id = ? ORDER BY createdAt ASC`
 
 	rows, err := tx.Query(query, postID)
@@ -120,12 +128,12 @@ func CommentSelectByPostID(postID int) ([]*Comment, error) {
 	}
 	defer rows.Close()
 
-	var comments []*Comment
+	var comments []*models.Comment
 	for rows.Next() {
-		comment := &Comment{}
+		comment := &models.Comment{}
 		var createdAtStr, updatedAtStr string
 
-		if err := rows.Scan(&comment.ID, &comment.UserID, &comment.PostID, &comment.Body,
+		if err := rows.Scan(&comment.ID, &comment.UserID, &comment.Username, &comment.PostID, &comment.Body,
 			&createdAtStr, &updatedAtStr); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error scanning comment: %v", err)
@@ -151,7 +159,7 @@ func CommentSelectByPostID(postID int) ([]*Comment, error) {
 }
 
 // Read - Get comments by user ID
-func CommentSelectByUserID(userID int) ([]*Comment, error) {
+func CommentSelectByUserID(userID int) ([]*models.Comment, error) {
 	db := SetupDatabase()
 	defer db.Close()
 
@@ -160,7 +168,7 @@ func CommentSelectByUserID(userID int) ([]*Comment, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, post_id, body, createdAt, updatedAt
+	query := `SELECT id, user_id, user, post_id, body, createdAt, updatedAt
              FROM comment WHERE user_id = ? ORDER BY createdAt DESC`
 
 	rows, err := tx.Query(query, userID)
@@ -170,12 +178,12 @@ func CommentSelectByUserID(userID int) ([]*Comment, error) {
 	}
 	defer rows.Close()
 
-	var comments []*Comment
+	var comments []*models.Comment
 	for rows.Next() {
-		comment := &Comment{}
+		comment := &models.Comment{}
 		var createdAtStr, updatedAtStr string
 
-		if err := rows.Scan(&comment.ID, &comment.UserID, &comment.PostID, &comment.Body,
+		if err := rows.Scan(&comment.ID, &comment.UserID, &comment.Username, &comment.PostID, &comment.Body,
 			&createdAtStr, &updatedAtStr); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error scanning comment: %v", err)

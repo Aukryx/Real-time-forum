@@ -252,3 +252,90 @@ fmt.Println(receivedMsg.Sender)   // Alice
 fmt.Println(receivedMsg.Receiver) // Bob
 fmt.Println(receivedMsg.Message)  // Hello, Bob!
 ```
+
+---
+
+## How to Send Messages Only to the Target User?
+Step 1: Store Connected Users
+We maintain a map to store connected users:
+
+```go
+var clients = make(map[string]*websocket.Conn)
+var mu sync.Mutex
+```
+- Key: Username (e.g., "Alice", "Bob")
+- Value: WebSocket connection  
+
+--- 
+
+## Step 2: Save User Connections
+When a user connects, we extract their username from the URL and store their WebSocket connection:
+
+```go
+func handleConnection(w http.ResponseWriter, r *http.Request) {
+    username := r.URL.Query().Get("username") // Extract username from query param
+    if username == "" {
+        http.Error(w, "Username required", http.StatusBadRequest)
+        return
+    }
+
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        fmt.Println("Error upgrading:", err)
+        return
+    }
+    defer conn.Close()
+
+    mu.Lock()
+    clients[username] = conn
+    mu.Unlock()
+
+    fmt.Println(username, "connected")
+
+    for {
+        _, msg, err := conn.ReadMessage()
+        if err != nil {
+            fmt.Println(username, "disconnected")
+            mu.Lock()
+            delete(clients, username) // Remove user when they disconnect
+            mu.Unlock()
+            break
+        }
+
+        var receivedMsg Message
+        err = json.Unmarshal(msg, &receivedMsg)
+        if err != nil {
+            fmt.Println("Invalid JSON:", err)
+            continue
+        }
+
+        if receivedMsg.Type == "private_message" {
+            sendPrivateMessage(receivedMsg)
+        }
+    }
+}
+```
+
+--- 
+
+## Step 3: Forward the Message to the Right User
+Now, we implement a function that finds the recipient's connection and sends the message:
+
+```go
+func sendPrivateMessage(msg Message) {
+    mu.Lock()
+    receiverConn, exists := clients[msg.Receiver] // Find the receiver’s WebSocket
+    mu.Unlock()
+
+    if !exists {
+        fmt.Println("User", msg.Receiver, "not found")
+        return
+    }
+
+    response, _ := json.Marshal(msg) // Convert struct back to JSON
+    err := receiverConn.WriteMessage(websocket.TextMessage, response)
+    if err != nil {
+        fmt.Println("Error sending message:", err)
+    }
+}
+```
