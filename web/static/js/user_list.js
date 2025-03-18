@@ -22,7 +22,7 @@ export async function populateUserList() {
       userList.appendChild(connectedHeader);
       
       userData.connectedUsers.forEach(user => {
-        console.log('Processing connected user:', user);
+        // console.log('Processing connected user:', user);
         const li = createUserListItem(user, true);
         userList.appendChild(li);
       });
@@ -94,7 +94,7 @@ export function createUserListItem(user, isConnected) {
   
   // Add click event to the list item
   li.addEventListener('click', () => {
-    console.log('Selected user:', user);
+    // console.log('Selected user:', user);
     // You can add additional functionality here, like showing user details
   });
   

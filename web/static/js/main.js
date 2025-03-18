@@ -17,7 +17,7 @@ export async function createMainPage() {
   }
 
   const user = await response.json();
-  console.log("Response: ", user);
+  // console.log("Response: ", user);
   
 
   // Set body styles
@@ -215,7 +215,7 @@ function initializePage() {
   populatePostList();
   populateImageList();
   setupPostCreation();
-  initPostPolling();
+  // initPostPolling();
 }
 
 function populateImageList() {
@@ -257,7 +257,7 @@ function populateImageList() {
 }
 
 // Update the DOM loaded event handler
-document.addEventListener('DOMContentLoaded', function() {
-  createMainPage();
-  // Remove initPostPolling from here since it's now called in createMainPage
-});
+// document.addEventListener('DOMContentLoaded', function() {
+//   createMainPage();
+//   // Remove initPostPolling from here since it's now called in createMainPage
+// });

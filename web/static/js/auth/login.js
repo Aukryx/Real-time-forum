@@ -1,10 +1,9 @@
 import { createMainPage } from "../main.js";
 import { removeWelcomePage } from "../welcome.js";
+import { setupWebSockets } from "../websockets.js";
 
 // Get reference to the register and login buttons
-const loginButton = document.querySelector('#loginForm');
-console.log(loginButton);
-
+// const loginButton = document.querySelector('#loginForm');
 // Listener to check when the submit button is pressed
 export async function login() {
     // e.preventDefault();
@@ -33,6 +32,8 @@ export async function login() {
                 // Redirect to dashboard or home after login
                 removeWelcomePage()
                 createMainPage()
+
+                setupWebSockets()
             }, 3000);
         }
 

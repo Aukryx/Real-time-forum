@@ -25,6 +25,7 @@ func NavbarHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, errCookie := r.Cookie("session_id")
 	if errCookie != nil {
 		fmt.Println("Error retrieving cookie in navbarhandler: ", errCookie)
+		return
 	}
 	username = db.UserNicknameWithUUID(cookie.Value)
 

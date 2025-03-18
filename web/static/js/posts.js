@@ -8,7 +8,7 @@ export async function populatePostList() {
         const posts = await fetchPosts();
         
         // Add debugging
-        console.log('Fetched posts:', posts);
+        // console.log('Fetched posts:', posts);
         
         if (!posts || posts.length === 0) {
         const li = document.createElement('li');
@@ -31,9 +31,9 @@ export async function populatePostList() {
         content.textContent = post.Body || 'No content';
 
         const date = new Date(post.CreatedAt);
-        console.log("post: ", post);
+        // console.log("post: ", post);
         
-        console.log("date: ", date);
+        // console.log("date: ", date);
         
         const formattedDate = date.getFullYear() + ' ' + 
             String(date.getMonth() + 1).padStart(2, '0') + ' ' + 
@@ -65,7 +65,7 @@ export function setupPostCreation() {
       const postTitle = titleInput.value.trim();
       const postContent = postInput.value.trim();
   
-      console.log("Post Content: ", postContent);
+      // console.log("Post Content: ", postContent);
       
       if (postTitle && postContent) {
         try {
@@ -108,7 +108,7 @@ async function submitPost() {
 const postTitle = titleInput.value.trim();
 const postContent = postInput.value.trim();
 
-console.log("Post Content: ", postContent);
+// console.log("Post Content: ", postContent);
 
     
 if (postTitle && postContent) {

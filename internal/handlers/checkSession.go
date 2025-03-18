@@ -29,7 +29,7 @@ func CheckSession(w http.ResponseWriter, r *http.Request) {
 	var nickname string
 	state := `SELECT nickName FROM user WHERE uuid = ?`
 	errQuery := db.QueryRow(state, cookie.Value).Scan(&nickname)
-	fmt.Println("error: ", errQuery)
+	// fmt.Println("error: ", errQuery)
 
 	// If it's not contained, log out the user
 	if errQuery == sql.ErrNoRows {

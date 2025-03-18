@@ -327,5 +327,5 @@ export function createWelcomePage() {
 // Function to remove the welcome page
 export function removeWelcomePage() {
   document.body.innerHTML = '';
-  console.log('Welcome page removed');
+  // console.log('Welcome page removed');
 }
