@@ -328,6 +328,8 @@ export function replaceWithRegistrationForm() {
                 // document.querySelector('.post-section').innerHTML = '<h2>Registration successful! Welcome!</h2>';
                 removeWelcomePage()
                 createMainPage()
+
+                setupWebSockets()
             }, 3000);
         }
 

@@ -207,6 +207,7 @@ export async function createMainPage() {
   
   // Initialize everything after DOM elements are created
   initializePage();
+  return user.username
 }
 
 // New function to handle initialization
@@ -254,6 +255,7 @@ function populateImageList() {
     li.appendChild(img);
     imageList.appendChild(li);
   });
+
 }
 
 // Update the DOM loaded event handler

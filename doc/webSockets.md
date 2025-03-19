@@ -218,3 +218,75 @@ We then have in that case:
 
 The struct and the informations sent via the javascript side depends on the purpose of the websocket connection.  
 
+# Additionnal informations
+
+## Differences Between `socket.onmessage` and `socket.addEventListener`
+
+### 1. Overview
+Both `socket.addEventListener('message', callback)` and `socket.onmessage = callback` listen for incoming WebSocket messages, but they have **some differences**.
+
+---
+
+### 2. Key Differences
+
+| Feature | `socket.onmessage` | `socket.addEventListener('message', ...)` |
+|---------|-------------------|---------------------------------|
+| **Overriding** | Only one function can be assigned. Setting a new one replaces the old one. | Multiple event listeners can be added. |
+| **Multiple Handlers** | ❌ No, assigning a new function **removes the previous one**. | ✅ Yes, multiple listeners can coexist. |
+| **Flexibility** | Simple, best for a single function. | More flexible, can attach multiple handlers. |
+
+---
+
+### 3. Example: Overriding with `onmessage`
+Since `onmessage` is a property, **assigning a new function replaces the old one**:
+
+```javascript
+socket.onmessage = function (event) {
+    console.log("Message received:", event.data);
+};
+
+// Later in the code, if you do this:
+socket.onmessage = function (event) {
+    console.log("New handler: ", event.data);
+};
+```
+🚨 The first function **is replaced** by the second one.
+
+---
+
+### 4. Example: Using `addEventListener` (Multiple Listeners)
+With `addEventListener`, you can **attach multiple functions**:
+
+```javascript
+socket.addEventListener('message', (event) => {
+    console.log("Listener 1: Message received:", event.data);
+});
+
+socket.addEventListener('message', (event) => {
+    console.log("Listener 2: Also handling the message");
+});
+```
+✅ Both listeners **run independently** when a message arrives.
+
+---
+
+### 5. Which One Should You Use?
+### **Use `socket.onmessage` when:**
+- You **only need one function** to handle messages.
+- Simplicity is preferred.
+
+### **Use `socket.addEventListener` when:**
+- You want **multiple event listeners** for the same event.
+- You're building a **modular system** where different parts of the code handle WebSocket messages separately.
+
+---
+
+### 6. Best Practices
+✅ **Use `addEventListener` for scalability** (recommended for most cases).  
+✅ **Use `onmessage` if you only need a single, simple handler**.  
+✅ **Never mix both**—if you do, `onmessage` **won't remove** `addEventListener` listeners.  
+
+---
+
+Would you like help organizing your WebSocket message handlers better? 🚀
+

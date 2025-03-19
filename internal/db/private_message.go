@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"models"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -30,7 +29,7 @@ func createPrivateMessageTable(db *sql.DB) {
 	executeSQL(db, createTableSQL)
 }
 
-func sendPrivateMessage(msg models.PrivateMessage) {
+func SendPrivateMessage(msg models.PrivateMessage) {
 	// Ensure both sender and receiver are set
 	if msg.Sender == "" || msg.Receiver == "" {
 		fmt.Println("Error: Sender or receiver not specified")
@@ -160,8 +159,8 @@ func PrivateMessageSelectByID(messageID int) (*models.PrivateMessage, error) {
 	}
 
 	// Parse time string and boolean
-	message.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-	message.Read = readInt != 0
+	// message.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+	// message.Read = readInt != 0
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("error committing transaction: %v", err)
@@ -205,8 +204,8 @@ func PrivateMessageSelectByUserID(userID int) ([]*models.PrivateMessage, error) 
 		}
 
 		// Parse time string and boolean
-		message.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-		message.Read = readInt != 0
+		// message.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		// message.Read = readInt != 0
 
 		messages = append(messages, message)
 	}

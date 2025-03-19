@@ -1,3 +1,5 @@
+import { getSocket } from "./websockets.js";
+
 // Global variables
 let chatWindow = null;
 let chatTabs = [];
@@ -344,19 +346,23 @@ function sendMessage() {
   // Get the input element
   const chatInput = document.getElementById('chatInput');
   if (!chatInput || !currentTab) return;
-  
+
   // Get the message text
   const messageText = chatInput.value.trim();
   if (!messageText) return;
-  
+
   // Find the current tab
   const currentTabData = chatTabs.find(tab => tab.id === currentTab);
   if (!currentTabData) return;
-  
+
+  // Get the recipient username
+  const receiver = currentTabData.username;
+  const socket = getSocket(); // Get the WebSocket instance
+
   // Get the content element
   const contentElement = document.getElementById(currentTabData.contentId);
   if (!contentElement) return;
-  
+
   // Create a message element
   const messageElement = document.createElement('div');
   messageElement.className = 'message-item';
@@ -365,31 +371,37 @@ function sendMessage() {
   messageElement.style.borderRadius = '4px';
   messageElement.style.maxWidth = '80%';
   messageElement.style.wordWrap = 'break-word';
-  
+
   // Style as an outgoing message
   messageElement.style.backgroundColor = '#3498db';
   messageElement.style.color = 'white';
   messageElement.style.alignSelf = 'flex-end';
   messageElement.style.marginLeft = 'auto';
-  
+
   // Add the message text
   messageElement.textContent = messageText;
-  
+
   // Create a message container for flex layout
   const messageContainer = document.createElement('div');
   messageContainer.style.display = 'flex';
   messageContainer.style.flexDirection = 'column';
   messageContainer.appendChild(messageElement);
-  
+
   // Add the message to the content
   contentElement.appendChild(messageContainer);
-  
+
   // Clear the input
   chatInput.value = '';
-  
+
   // Scroll to the bottom
   contentElement.scrollTop = contentElement.scrollHeight;
-  
-  // In a real application, you would send the message to the server here
-  console.log(`Message sent to ${currentTabData.username}: ${messageText}`);
+
+  // Send the message via WebSocket
+  if (socket && socket.sendPrivateMessage) {
+    socket.sendPrivateMessage(receiver, messageText);
+  } else {
+    console.error("WebSocket is not initialized or sendPrivateMessage is not defined.");
+  }
+
+  // console.log(`Message sent to ${receiver}: ${messageText}`);
 }

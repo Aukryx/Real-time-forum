@@ -21,7 +21,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		// Allow WebSocket connections from http://localhost:8080
 		allowedOrigins := []string{
-			"https://localhost:8080",
+			"http://localhost:8080",
+			"http://localhost:8081",
 		}
 		// Get the website link (ex: http://localhost:8080)
 		origin := r.Header.Get("Origin")
@@ -72,7 +73,8 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if receivedMsg.Type == "private_message" {
-			// sendPrivateMessage(receivedMsg)
+			fmt.Println("Received private message from", receivedMsg.Sender, "to", receivedMsg.Receiver)
+			db.SendPrivateMessage(receivedMsg)
 		}
 	}
 }
