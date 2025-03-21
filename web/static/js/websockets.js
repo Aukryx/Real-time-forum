@@ -46,11 +46,15 @@ export async function setupWebSockets() {
                     populateUserList(data.user_list);
                     console.log('User list updated:', data.Userlist);
                     break;
+                // When someone opens a chat
+                case 'chat_history':
+                    console.log('Chat history:', data);
+                    break;
                 case 'system_notification':
                     console.log('System notification:', data.message);
                     break;
                 default:
-                    console.log('Received message:', data);
+                    console.log('Received data:', data);
             }
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -59,7 +63,7 @@ export async function setupWebSockets() {
 
     // Function to send a private message
     socket.sendPrivateMessage = function (receiver, message) {
-        console.log(username, "tries to send a private message to", receiver, ":", message);
+        console.log(username, "Trying to send a private message to", receiver, ":", message);
         
         if (socket.readyState === WebSocket.OPEN) {
             const privateMessage = {
@@ -73,6 +77,24 @@ export async function setupWebSockets() {
             console.error("WebSocket is not open. Cannot send message.");
         }
     };
+
+    // Function to get the history of messages between 2 users
+    socket.getChatHistory = function (receiver) {
+        console.log(username, "Requests chat history with", receiver);
+        
+        // Checking the state of the websocket connection
+        if (socket.readyState === WebSocket.OPEN) {
+            const chatHistoryRequest = {
+                type: "chat_history_request",
+                sender: username,
+                receiver: receiver,
+            };
+            socket.send(JSON.stringify(chatHistoryRequest));
+        } else {
+            console.error("WebSocket is not open. Cannot send message.");
+        }
+    }
+
     return socket;
 }
 

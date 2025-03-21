@@ -332,3 +332,17 @@ func UserIDWithUUID(uuid string) int {
 
 	return id
 }
+
+func UserIDWithNickname(nickName string) int {
+	// Setup database and variable to return
+	db := SetupDatabase()
+	var id int
+
+	state := `SELECT id FROM user WHERE nickName = ?`
+	err_db := db.QueryRow(state, nickName).Scan(&id)
+	if err_db != nil {
+		fmt.Printf("Error getting the user's id")
+	}
+
+	return id
+}

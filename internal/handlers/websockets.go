@@ -25,6 +25,7 @@ var upgrader = websocket.Upgrader{
 			"http://localhost:8081",
 			"http://localhost:8082",
 			"http://localhost:8040",
+			"http://localhost:8050",
 		}
 		// Get the website link (ex: http://localhost:8080)
 		origin := r.Header.Get("Origin")
@@ -79,6 +80,11 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		if receivedMsg.Type == "private_message" {
 			fmt.Println("Received private message from", receivedMsg.Sender, "to", receivedMsg.Receiver)
 			db.SendPrivateMessage(receivedMsg)
+		} else if receivedMsg.Type == "chat_history_request" {
+			fmt.Println("Received chat history request between", receivedMsg.Sender, "to", receivedMsg.Receiver)
+			sender := db.UserIDWithNickname(receivedMsg.Sender)
+			receiver := db.UserIDWithNickname(receivedMsg.Receiver)
+			db.SendChatHistory(sender, receiver, conn)
 		}
 	}
 }

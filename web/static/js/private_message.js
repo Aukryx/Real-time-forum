@@ -1,5 +1,4 @@
 import { getSocket } from "./websockets.js";
-import { populateUserList } from "./user_list.js";
 
 // Global variables
 let chatWindow = null;
@@ -27,37 +26,32 @@ function setupUserListClickHandlers() {
   userListItems.forEach(item => {
     // Ignorer les éléments d'en-tête
     if (item.style.fontWeight === 'bold') return;
-    
-    // Vérifier si l'utilisateur est connecté
-    // const isConnected = item.dataset.connected === 'true';
-    
-    // Ajouter un événement de clic uniquement pour les utilisateurs connectés
-    // if (isConnected) {
-      item.addEventListener('click', async (event) => {
-        // Obtenir le nom d'utilisateur de l'élément cliqué
-        const usernameElement = item.querySelector('span');
-        if (!usernameElement) return;
-        
-        const clickedUsername = usernameElement.textContent;
-        
-        // Ne pas ouvrir le chat avec soi-même
-        if (clickedUsername === currentUsername) {
-          console.log('Cannot open chat with yourself');
-          return;
-        }
-        
-        // Ouvrir ou créer une fenêtre de chat avec cet utilisateur
-        openChatWithUser(clickedUsername);
-        
-        // Supprimer le point de notification s'il existe
-        const notificationDot = item.querySelector('.notification-dot');
-        if (notificationDot) {
-          notificationDot.remove();
-          // Réinitialiser le compteur de messages non lus pour cet utilisateur
-          unreadMessages[clickedUsername] = 0;
-        }
-      });
-    // }
+
+    // Adding an event listener on the users item
+    item.addEventListener('click', async (event) => {
+      // Obtenir le nom d'utilisateur de l'élément cliqué
+      const usernameElement = item.querySelector('span');
+      if (!usernameElement) return;
+      
+      const clickedUsername = usernameElement.textContent;
+      
+      // Ne pas ouvrir le chat avec soi-même
+      if (clickedUsername === currentUsername) {
+        console.log('Cannot open chat with yourself');
+        return;
+      }
+      
+      // Ouvrir ou créer une fenêtre de chat avec cet utilisateur
+      openChatWithUser(clickedUsername);
+      
+      // Supprimer le point de notification s'il existe
+      const notificationDot = item.querySelector('.notification-dot');
+      if (notificationDot) {
+        notificationDot.remove();
+        // Réinitialiser le compteur de messages non lus pour cet utilisateur
+        unreadMessages[clickedUsername] = 0;
+      }
+    });
   });
 }
 
@@ -230,6 +224,11 @@ function openChatWithUser(username) {
     createChatWindow();
   }
   
+  // Get the WebSocket instance
+  let socket = getSocket();
+  // Generate the history of messages between the current user and the selected user
+  socket.getChatHistory(username);
+
   // Check if tab for this user already exists
   const existingTab = chatTabs.find(tab => tab.username === username);
   if (existingTab) {
@@ -349,12 +348,15 @@ function createChatWindow() {
   
   // Add click event to send button
   sendButton.addEventListener('click', () => {
+    console.log("sending message");
+    
     sendMessage();
   });
   
   // Add keypress event to text input
   textInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
+      console.log("sending message");
       sendMessage();
     }
   });
