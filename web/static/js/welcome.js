@@ -3,6 +3,7 @@ import { login } from "./auth/login.js";
 import { createMainPage } from "./main.js";
 import { replaceWithRegistrationForm } from "./auth/register.js";
 import { checkSession } from "./auth/checkSession.js";
+import { setupWebSockets } from "./websockets.js";
 
 document.addEventListener('DOMContentLoaded', async function() {
   // Check if user is already logged in
@@ -10,7 +11,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   if (isLoggedIn) {
     // User is logged in, show main page
-    createMainPage();
+    await createMainPage();
+    await setupWebSockets();
   } else {
     // User is not logged in, show welcome/login page
     createWelcomePage();

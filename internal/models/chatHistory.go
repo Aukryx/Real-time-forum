@@ -12,8 +12,8 @@ type ChatHistoryMessage struct {
 
 // ChatHistory represents the full history of messages between two users
 type ChatHistory struct {
-	Type     string               `json:"type"`
-	User1ID  int                  `json:"user1_id"`
-	User2ID  int                  `json:"user2_id"`
-	Messages []ChatHistoryMessage `json:"messages"`
+	Type      string               `json:"type"`
+	User1Name string               `json:"user1name"`
+	User2Name string               `json:"user2name"`
+	Messages  []ChatHistoryMessage `json:"messages"`
 }

@@ -1,6 +1,6 @@
 import { getUsername } from "./getUser.js";
 import { populateUserList } from "./user_list.js";
-import { receivePrivateMessage } from "./private_message.js";
+import { receivePrivateMessage, receiveChatHistory } from "./private_message.js";
 
 let socket = null;
 
@@ -33,7 +33,7 @@ export async function setupWebSockets() {
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
-            console.log('Received message:', data);
+            // console.log('Received message:', data);
             
             switch (data.type) {
                 // When a private message is received
@@ -49,6 +49,7 @@ export async function setupWebSockets() {
                 // When someone opens a chat
                 case 'chat_history':
                     console.log('Chat history:', data);
+                    receiveChatHistory(data.user2name, data.messages);
                     break;
                 case 'system_notification':
                     console.log('System notification:', data.message);
@@ -65,7 +66,7 @@ export async function setupWebSockets() {
     socket.sendPrivateMessage = function (receiver, message) {
         console.log(username, "Trying to send a private message to", receiver, ":", message);
         
-        if (socket.readyState === WebSocket.OPEN) {
+        if (socket.readyState === WebSocket.OPEN) {            
             const privateMessage = {
                 type: "private_message",
                 sender: username,

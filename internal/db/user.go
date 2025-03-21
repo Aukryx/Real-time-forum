@@ -346,3 +346,17 @@ func UserIDWithNickname(nickName string) int {
 
 	return id
 }
+
+func UserNicknameWithID(id int) string {
+	// Setup database and variable to return
+	db := SetupDatabase()
+	var nickName string
+
+	state := `SELECT nickName FROM user WHERE id = ?`
+	err_db := db.QueryRow(state, id).Scan(&nickName)
+	if err_db != nil {
+		fmt.Printf("Error getting the user's nickname")
+	}
+
+	return nickName
+}

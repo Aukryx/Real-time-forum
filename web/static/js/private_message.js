@@ -6,6 +6,8 @@ let chatTabs = [];
 let currentTab = null;
 let currentUsername = null;
 let unreadMessages = {}; // Pour suivre les messages non lus par utilisateur
+let messageHistories = {}; // Store message histories by username
+let messagesPerPage = 10; // Number of messages to load at once
 
 // Initialize private messaging functionality
 export function initializePrivateMessaging() {
@@ -57,8 +59,6 @@ function setupUserListClickHandlers() {
 
 // Function to handle incoming private messages
 export function receivePrivateMessage(sender, messageText) {
-  console.log("test");
-  
   // Gérer les messages même si la chat window n'est pas créée
   if (!chatWindow) {
     createChatWindow();
@@ -98,6 +98,156 @@ export function receivePrivateMessage(sender, messageText) {
   moveUserToTop(sender);
 }
 
+// Function to handle chat history
+export function receiveChatHistory(sender, messages) {
+  // Store the full message history
+  if (!messageHistories[sender]) {
+    messageHistories[sender] = [];
+  }
+  
+  // Add messages to history (messages should be in chronological order)
+  messageHistories[sender] = messages;
+  
+  // Find the tab for this user
+  const tabData = chatTabs.find(tab => tab.username === sender);
+  if (!tabData) return;
+  
+  // Get the content element
+  const contentElement = document.getElementById(tabData.contentId);
+  if (!contentElement) return;
+  
+  // Clear any existing content
+  contentElement.innerHTML = '';
+  
+  // Create loading indicator at the top
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.id = `loading-${tabData.id}`;
+  loadingIndicator.textContent = 'Loading older messages...';
+  loadingIndicator.style.textAlign = 'center';
+  loadingIndicator.style.color = '#888';
+  loadingIndicator.style.padding = '10px';
+  loadingIndicator.style.display = 'none'; // Hide initially
+  contentElement.appendChild(loadingIndicator);
+  
+  // Create message container
+  const messageContainer = document.createElement('div');
+  messageContainer.className = 'message-container';
+  messageContainer.style.display = 'flex';
+  messageContainer.style.flexDirection = 'column';
+  messageContainer.style.minHeight = '100%';
+  contentElement.appendChild(messageContainer);
+  
+  // Track displayed messages and current position
+  let displayedCount = 0;
+  let isLoadingMore = false;
+  
+  // Add scroll event for infinite scrolling
+  contentElement.addEventListener('scroll', function() {
+    // If we're near the top and not currently loading
+    if (contentElement.scrollTop < 50 && !isLoadingMore) {
+      // Check if there are more messages to load
+      if (displayedCount < messageHistories[sender].length) {
+        isLoadingMore = true;
+        loadingIndicator.style.display = 'block';
+        
+        // Get current scroll height to maintain position
+        const scrollHeight = contentElement.scrollHeight;
+        
+        setTimeout(() => {
+          // Calculate how many messages to load
+          const startIndex = Math.max(0, messageHistories[sender].length - displayedCount - messagesPerPage);
+          const endIndex = messageHistories[sender].length - displayedCount;
+          
+          // Get the batch of older messages
+          const nextBatch = messageHistories[sender].slice(startIndex, endIndex);
+          
+          // Add older messages at the beginning of the container
+          nextBatch.forEach(msg => {
+            const messageElement = createMessageElement(
+              msg.sender === currentUsername ? 'sent' : 'received',
+              msg.message,
+              msg.sender
+            );
+            
+            // Insert at the beginning
+            messageContainer.insertBefore(messageElement, messageContainer.firstChild);
+            displayedCount++;
+          });
+          
+          // Calculate how much the scroll height has changed
+          const newScrollHeight = contentElement.scrollHeight;
+          const scrollDiff = newScrollHeight - scrollHeight;
+          
+          // Adjust scroll position to keep the view stable
+          contentElement.scrollTop = scrollDiff;
+          
+          // Hide loading indicator and reset flag
+          loadingIndicator.style.display = 'none';
+          isLoadingMore = false;
+        }, 300);
+      }
+    }
+  });
+  
+  // Load initial batch of messages (most recent)
+  const initialBatchSize = Math.min(messagesPerPage, messages.length);
+  const initialMessages = messages.slice(messages.length - initialBatchSize);
+  
+  // Display the initial messages
+  initialMessages.forEach(msg => {
+    console.log("test");
+    
+    const messageElement = createMessageElement(
+      msg.sender === currentUsername ? 'sent' : 'received',
+      msg.message,
+      msg.sender
+    );
+    messageContainer.appendChild(messageElement);
+    displayedCount++;
+  });
+  
+  // Scroll to the bottom to show most recent messages
+  contentElement.scrollTop = contentElement.scrollHeight;
+}
+
+// Helper function to create message elements
+function createMessageElement(type, messageText, sender) {
+  // Create message container
+  const messageContainer = document.createElement('div');
+  messageContainer.style.display = 'flex';
+  messageContainer.style.flexDirection = 'column';
+  messageContainer.style.margin = '5px 0';
+
+  // Create the actual message element
+  const messageElement = document.createElement('div');
+  messageElement.className = `message-item ${type}`;
+  messageElement.style.padding = '8px';
+  messageElement.style.borderRadius = '4px';
+  messageElement.style.maxWidth = '80%';
+  messageElement.style.wordWrap = 'break-word';
+  
+  // Style based on message type
+  if (type === 'sent') {
+    messageElement.style.backgroundColor = '#3498db';
+    messageElement.style.color = 'white';
+    messageElement.style.alignSelf = 'flex-end';
+    messageElement.style.marginLeft = 'auto';
+  } else {
+    messageElement.style.backgroundColor = '#e0e0e0';
+    messageElement.style.color = 'black';
+    messageElement.style.alignSelf = 'flex-start';
+    messageElement.style.marginRight = 'auto';
+  }
+  
+  // Add the message text
+  messageElement.textContent = messageText;
+  
+  // Add the message to the container
+  messageContainer.appendChild(messageElement);
+  
+  return messageContainer;
+}
+
 // Function to display a received message in the appropriate chat tab
 function displayReceivedMessage(sender, messageText) {
   // Create chat window if it doesn't exist
@@ -120,32 +270,24 @@ function displayReceivedMessage(sender, messageText) {
   const contentElement = document.getElementById(tabData.contentId);
   if (!contentElement) return;
   
-  // Create a message element
-  const messageElement = document.createElement('div');
-  messageElement.className = 'message-item received';
-  messageElement.style.margin = '5px 0';
-  messageElement.style.padding = '8px';
-  messageElement.style.borderRadius = '4px';
-  messageElement.style.maxWidth = '80%';
-  messageElement.style.wordWrap = 'break-word';
+  // Find the message container, or create it if it doesn't exist
+  let messageContainer = contentElement.querySelector('.message-container');
+  if (!messageContainer) {
+    // Clear the content first (removing any welcome message)
+    contentElement.innerHTML = '';
+    
+    // Create the container
+    messageContainer = document.createElement('div');
+    messageContainer.className = 'message-container';
+    messageContainer.style.display = 'flex';
+    messageContainer.style.flexDirection = 'column';
+    messageContainer.style.minHeight = '100%';
+    contentElement.appendChild(messageContainer);
+  }
   
-  // Style as an incoming message
-  messageElement.style.backgroundColor = '#e0e0e0';
-  messageElement.style.color = 'black';
-  messageElement.style.alignSelf = 'flex-start';
-  messageElement.style.marginRight = 'auto';
-  
-  // Add the message text
-  messageElement.textContent = messageText;
-  
-  // Create a message container for flex layout
-  const messageContainer = document.createElement('div');
-  messageContainer.style.display = 'flex';
-  messageContainer.style.flexDirection = 'column';
+  // Add the new message to the container
+  const messageElement = createMessageElement('received', messageText, sender);
   messageContainer.appendChild(messageElement);
-  
-  // Add the message to the content
-  contentElement.appendChild(messageContainer);
   
   // Scroll to the bottom
   contentElement.scrollTop = contentElement.scrollHeight;
@@ -156,6 +298,16 @@ function displayReceivedMessage(sender, messageText) {
   }
   if (currentTab !== tabData.id) {
     unreadMessages[sender]++;
+  }
+  
+  // Also add to message history if we're tracking it
+  if (messageHistories[sender]) {
+    messageHistories[sender].push({
+      sender: sender,
+      receiver: currentUsername,
+      message: messageText,
+      timestamp: new Date().toISOString()
+    });
   }
 }
 
@@ -187,34 +339,75 @@ function addMessageNotification(username) {
 }
 
 // Function to move a user to the top of the user list
+// Function to move a user to the top of the user list
 function moveUserToTop(username) {
-  // // We'll need to call the API to update the user list
-  // // For now, we'll just refresh the entire user list
-  // // And rely on the server to handle the ordering
-  // populateUserList().then(() => {
-  //   // After repopulating, re-add any notification dots
-  //   const userListItems = document.querySelectorAll('#userList li');
+  const userList = document.getElementById('userList');
+  const userItems = userList.querySelectorAll('li');
+  let headerItem = null;
+  let userItem = null;
+  
+  // Find the header and the user item
+  for (const item of userItems) {
+    // Skip if this is not what we're looking for
+    if (item.style.fontWeight === 'bold') {
+      headerItem = item;
+      continue;
+    }
     
-  //   for (const item of userListItems) {
-  //     const usernameElement = item.querySelector('span');
-  //     if (usernameElement && unreadMessages[usernameElement.textContent] > 0) {
-  //       // Re-add notification dot
-  //       let notificationDot = document.createElement('div');
-  //       notificationDot.className = 'notification-dot';
-  //       notificationDot.style.width = '10px';
-  //       notificationDot.style.height = '10px';
-  //       notificationDot.style.borderRadius = '50%';
-  //       notificationDot.style.backgroundColor = 'red';
-  //       notificationDot.style.marginLeft = 'auto';
-        
-  //       // Add it to the user item
-  //       item.appendChild(notificationDot);
-  //     }
-  //   }
+    const usernameElement = item.querySelector('span');
+    if (usernameElement && usernameElement.textContent === username) {
+      userItem = item;
+      break;
+    }
+  }
+  
+  // If we found the user item and header exists
+  if (userItem && headerItem) {
+    // Clone the user item
+    const clonedItem = userItem.cloneNode(true);
     
-  //   // Re-setup click handlers after DOM changes
-  //   setupUserListClickHandlers();
-  // });
+    // Remove the original
+    userItem.remove();
+    
+    // Insert the cloned item right after the header
+    if (headerItem.nextSibling) {
+      userList.insertBefore(clonedItem, headerItem.nextSibling);
+    } else {
+      userList.appendChild(clonedItem);
+    }
+    
+    // Re-attach event listeners to the cloned item
+    setupUserItemEventListeners(clonedItem);
+  }
+}
+
+// Helper function to set up event listeners for a user item
+function setupUserItemEventListeners(item) {
+  // Get username from the item
+  const usernameElement = item.querySelector('span');
+  if (!usernameElement) return;
+  
+  const username = usernameElement.textContent;
+  
+  // Skip if it's the current user
+  if (username === currentUsername) return;
+  
+  // Add click event listener
+  item.addEventListener('click', async (event) => {
+    // Ignore if clicked on notification dot
+    if (event.target.className === 'notification-dot') return;
+    
+    // Open or create chat with this user
+    openChatWithUser(username);
+    
+    // Remove notification dot if exists
+    const notificationDot = item.querySelector('.notification-dot');
+    if (notificationDot) {
+      notificationDot.remove();
+      // Reset unread message counter
+      unreadMessages[username] = 0;
+    }
+  });
 }
 
 // Open or create a chat window with a specific user
@@ -245,7 +438,6 @@ function openChatWithUser(username) {
 
 // Create the chat window
 function createChatWindow() {
-  // [Code existant inchangé pour createChatWindow]
   // Create the chat window container
   chatWindow = document.createElement('div');
   chatWindow.id = 'chatWindow';
@@ -377,7 +569,6 @@ function createChatWindow() {
 
 // Create a new chat tab
 function createNewChatTab(username) {
-  // [Code existant inchangé pour createNewChatTab]
   // Create a unique ID for the tab
   const tabId = 'tab_' + Date.now();
   
@@ -512,7 +703,6 @@ function switchToTab(tabId) {
 
 // Close a specific tab
 function closeTab(tabId) {
-  // [Code existant inchangé pour closeTab]
   // Find the tab in the array
   const tabIndex = chatTabs.findIndex(tab => tab.id === tabId);
   if (tabIndex === -1) return;
@@ -546,7 +736,6 @@ function closeTab(tabId) {
 
 // Send a message in the current chat
 function sendMessage() {
-  // [Code existant inchangé pour sendMessage]
   // Get the input element
   const chatInput = document.getElementById('chatInput');
   if (!chatInput || !currentTab) return;
@@ -566,33 +755,27 @@ function sendMessage() {
   // Get the content element
   const contentElement = document.getElementById(currentTabData.contentId);
   if (!contentElement) return;
+  
+  // Find the message container
+  let messageContainer = contentElement.querySelector('.message-container');
+  if (!messageContainer) {
+    // Create one if it doesn't exist
+    messageContainer = document.createElement('div');
+    messageContainer.className = 'message-container';
+    messageContainer.style.display = 'flex';
+    messageContainer.style.flexDirection = 'column';
+    messageContainer.style.minHeight = '100%';
+    
+    // Clear content and add the container
+    contentElement.innerHTML = '';
+    contentElement.appendChild(messageContainer);
+  }
 
-  // Create a message element
-  const messageElement = document.createElement('div');
-  messageElement.className = 'message-item';
-  messageElement.style.margin = '5px 0';
-  messageElement.style.padding = '8px';
-  messageElement.style.borderRadius = '4px';
-  messageElement.style.maxWidth = '80%';
-  messageElement.style.wordWrap = 'break-word';
+  // Create sent message element
+  const messageElement = createMessageElement('sent', messageText, currentUsername);
 
-  // Style as an outgoing message
-  messageElement.style.backgroundColor = '#3498db';
-  messageElement.style.color = 'white';
-  messageElement.style.alignSelf = 'flex-end';
-  messageElement.style.marginLeft = 'auto';
-
-  // Add the message text
-  messageElement.textContent = messageText;
-
-  // Create a message container for flex layout
-  const messageContainer = document.createElement('div');
-  messageContainer.style.display = 'flex';
-  messageContainer.style.flexDirection = 'column';
+  // Add the message to the container
   messageContainer.appendChild(messageElement);
-
-  // Add the message to the content
-  contentElement.appendChild(messageContainer);
 
   // Clear the input
   chatInput.value = '';
@@ -603,6 +786,16 @@ function sendMessage() {
   // Send the message via WebSocket
   if (socket && socket.sendPrivateMessage) {
     socket.sendPrivateMessage(receiver, messageText);
+    
+    // Also add to message history if we're tracking it
+    if (messageHistories[receiver]) {
+      messageHistories[receiver].push({
+        sender: currentUsername,
+        receiver: receiver,
+        message: messageText,
+        timestamp: new Date().toISOString()
+      });
+    }
   } else {
     console.error("WebSocket is not initialized or sendPrivateMessage is not defined.");
   }

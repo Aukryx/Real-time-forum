@@ -1,6 +1,7 @@
 import { createWelcomePage } from "../welcome.js";
 import { removeWelcomePage } from "../welcome.js";
 import { createMainPage } from "../main.js";
+import { setupWebSockets } from "../websockets.js";
 
 // Function that creates a div showing the registration result message
 export function showMessage(text, isSuccess) {
@@ -324,12 +325,12 @@ export function replaceWithRegistrationForm() {
 
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 // document.querySelector('.post-section').innerHTML = '<h2>Registration successful! Welcome!</h2>';
                 removeWelcomePage()
-                createMainPage()
+                await createMainPage()
 
-                setupWebSockets()
+                await setupWebSockets()
             }, 3000);
         }
 

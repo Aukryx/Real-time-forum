@@ -28,12 +28,12 @@ export async function login() {
 
         // If the success response if true, send the user to the main page after a short delay
         if (result.success) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 // Redirect to dashboard or home after login
                 removeWelcomePage()
-                createMainPage()
+                await createMainPage()
 
-                setupWebSockets()
+                await setupWebSockets()
             }, 3000);
         }
 
