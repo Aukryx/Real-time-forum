@@ -20,7 +20,6 @@ type Post struct {
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
-	ImagePath *string   `json:"image"`
 }
 
 // PostRequest represents the incoming request structure
@@ -71,7 +70,7 @@ func HandleCreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the new post into the database
-	createdPost, err := db.PostInsert(post.UserID, cookie.Value, post.Title, post.Body, post.ImagePath)
+	createdPost, err := db.PostInsert(post.UserID, cookie.Value, post.Title, post.Body)
 	if err != nil {
 		http.Error(w, "Error creating post", http.StatusInternalServerError)
 		return
@@ -108,7 +107,7 @@ func HandleFetchNewPosts(w http.ResponseWriter, r *http.Request) {
 // getNewPosts fetches posts newer than the specified ID
 func getNewPosts(lastID int) ([]Post, error) {
 	query := `
-		SELECT p.id, p.user_id, p.user, p.title, p.body, p.createdAt, p.updatedAt, p.image
+		SELECT p.id, p.user_id, p.user, p.title, p.body, p.createdAt, p.updatedAt
 		FROM post p
 		WHERE p.id > ?
 		ORDER BY p.id DESC
@@ -134,7 +133,6 @@ func getNewPosts(lastID int) ([]Post, error) {
 			&post.Body,
 			&createdAtStr,
 			&updatedAtStr,
-			&post.ImagePath,
 		)
 		if err != nil {
 			return nil, err

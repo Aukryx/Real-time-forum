@@ -48,8 +48,6 @@ func SetupDatabase() *sql.DB {
 		createUsersTable(db)
 		createPostsTable(db)
 		createCommentsTable(db)
-		createLikesDislikesTable(db)
-		createImagesTable(db)
 		createNotificationsTable(db)
 		createPrivateMessageTable(db)
 	}

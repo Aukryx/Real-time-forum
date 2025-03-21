@@ -1,4 +1,5 @@
 import { createWelcomePage } from "../welcome.js";
+import { setupWebSockets } from "../websockets.js";
 import { removeWelcomePage } from "../welcome.js";
 import { createMainPage } from "../main.js";
 import { setupWebSockets } from "../websockets.js";
