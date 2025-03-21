@@ -2,7 +2,6 @@ import { createWelcomePage } from "../welcome.js";
 import { setupWebSockets } from "../websockets.js";
 import { removeWelcomePage } from "../welcome.js";
 import { createMainPage } from "../main.js";
-import { setupWebSockets } from "../websockets.js";
 
 // Function that creates a div showing the registration result message
 export function showMessage(text, isSuccess) {

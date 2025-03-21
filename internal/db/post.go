@@ -193,7 +193,7 @@ func PostSelectByUserID(userID int) ([]*models.Post, error) {
 		return nil, fmt.Errorf("error starting transaction: %v", err)
 	}
 
-	query := `SELECT id, user_id, title, body, createdAt, updatedAt,
+	query := `SELECT id, user_id, title, body, createdAt, updatedAt
              FROM post WHERE user_id = ?`
 
 	rows, err := tx.Query(query, userID)
