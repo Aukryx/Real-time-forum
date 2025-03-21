@@ -23,6 +23,8 @@ var upgrader = websocket.Upgrader{
 		allowedOrigins := []string{
 			"http://localhost:8080",
 			"http://localhost:8081",
+			"http://localhost:8082",
+			"http://localhost:8040",
 		}
 		// Get the website link (ex: http://localhost:8080)
 		origin := r.Header.Get("Origin")
@@ -52,6 +54,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	clients[username] = conn
 	mu.Unlock()
+	SendUserListToAll()
 
 	fmt.Println(username, "connected")
 
@@ -62,6 +65,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			mu.Lock()
 			delete(clients, username)
 			mu.Unlock()
+			SendUserListToAll()
 			break
 		}
 
@@ -77,4 +81,40 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			db.SendPrivateMessage(receivedMsg)
 		}
 	}
+}
+
+// SendUserListToAll sends the current list of connected users to all connected clients
+func SendUserListToAll() {
+	mu.Lock()
+	// Create a slice of all connected usernames
+	userList := make([]string, 0, len(clients))
+	for username := range clients {
+		userList = append(userList, username)
+	}
+
+	// Prepare the message once
+	response := models.PrivateMessage{
+		Type:     "user_list",
+		Sender:   "server",
+		Message:  "",
+		UserList: userList,
+	}
+
+	// Convert to JSON
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println("Error marshaling user list:", err)
+		mu.Unlock()
+		return
+	}
+
+	// Send to all connected clients
+	for username, conn := range clients {
+		response.Receiver = username // Set the receiver for logging purposes
+		err := conn.WriteMessage(websocket.TextMessage, jsonResponse)
+		if err != nil {
+			fmt.Println("Error sending user list to", username, ":", err)
+		}
+	}
+	mu.Unlock()
 }
