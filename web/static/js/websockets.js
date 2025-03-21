@@ -1,39 +1,50 @@
 import { getUsername } from "./getUser.js";
-// import { populateUserList } from "./user_list";
+import { populateUserList } from "./user_list.js";
+import { receivePrivateMessage } from "./private_message.js";
 
 let socket = null;
 
 export async function setupWebSockets() {
+    // Getting username with a request server
     let username = await getUsername();
+
     // Establish WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     socket = new WebSocket(`${protocol}//${host}/ws`); // Assign to global socket variable
 
-    // Connection opened
+    // Method that triggers when the connection is established
     socket.onopen = function () {
         console.log("WebSocket connection established");
-        
-        // Send a connection message
-        // const connectMessage = {
-        //     type: 'connect',
-        //     username: username
-        // };
-        // socket.send(JSON.stringify(connectMessage));
     };
 
-    // Handle messages
+    // Method that triggers when an error occurs
+    socket.onerror = function (error) {
+        console.error("WebSocket error:", error);
+    };
+
+    // Method that triggers when connection is closed (attempt to reconnect)
+    socket.onclose = function () {
+        console.log("WebSocket connection closed. Attempting to reconnect...");
+        setTimeout(() => setupWebSockets(username), 3000);
+    };
+
+    // Method that triggers when a message is received from the server
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
+            console.log('Received message:', data);
+            
             switch (data.type) {
+                // When a private message is received
                 case 'private_message':
+                    receivePrivateMessage(data.sender, data.message);
                     console.log(username, 'received private message:', data);
                     break;
-                case 'user_list_update':
-                    if (typeof populateUserList === 'function') {
-                        populateUserList();
-                    }
+                // When someone connects or disconnects    
+                case 'user_list':
+                    populateUserList(data.user_list);
+                    console.log('User list updated:', data.Userlist);
                     break;
                 case 'system_notification':
                     console.log('System notification:', data.message);
@@ -44,17 +55,6 @@ export async function setupWebSockets() {
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
         }
-    };
-
-    // Handle errors
-    socket.onerror = function (error) {
-        console.error("WebSocket error:", error);
-    };
-
-    // Connection closed (attempt to reconnect)
-    socket.onclose = function () {
-        console.log("WebSocket connection closed. Attempting to reconnect...");
-        setTimeout(() => setupWebSockets(username), 3000);
     };
 
     // Function to send a private message
@@ -73,7 +73,6 @@ export async function setupWebSockets() {
             console.error("WebSocket is not open. Cannot send message.");
         }
     };
-
     return socket;
 }
 
