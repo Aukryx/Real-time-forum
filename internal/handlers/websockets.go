@@ -24,7 +24,7 @@ var upgrader = websocket.Upgrader{
 			"http://localhost:8080",
 			"http://localhost:8081",
 			"http://localhost:8082",
-			"http://localhost:8040",
+			"http://localhost:8041",
 		}
 		// Get the website link (ex: http://localhost:8080)
 		origin := r.Header.Get("Origin")

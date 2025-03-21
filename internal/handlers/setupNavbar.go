@@ -4,13 +4,9 @@ import (
 	"db"
 	"encoding/json"
 	"fmt"
+	"models"
 	"net/http"
 )
-
-// Response structure
-type Response struct {
-	Username string `json:"username"`
-}
 
 // Function to get the user's informations for the navbar display
 func NavbarHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +22,7 @@ func NavbarHandler(w http.ResponseWriter, r *http.Request) {
 	if errCookie != nil {
 		fmt.Println("Error retrieving cookie in navbarhandler: ", errCookie)
 		// Return a response with empty username or some default state
-		response := Response{
+		response := models.Response{
 			Username: "", // or "Guest" or whatever makes sense for your application
 		}
 
@@ -39,7 +35,7 @@ func NavbarHandler(w http.ResponseWriter, r *http.Request) {
 	username = db.UserNicknameWithUUID(cookie.Value)
 
 	// Create the response
-	response := Response{
+	response := models.Response{
 		Username: username,
 	}
 

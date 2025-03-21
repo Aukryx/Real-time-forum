@@ -92,7 +92,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received post: %+v", post)
 
 	// Ensure you're passing the correct parameters
-	createdPost, err := db.PostInsert(post.UserID, "", post.Title, post.Body, post.ImagePath)
+	createdPost, err := db.PostInsert(post.UserID, "", post.Title, post.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

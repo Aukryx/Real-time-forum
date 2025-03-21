@@ -8,7 +8,5 @@ use (
 	./internal/db
 	./internal/handlers
 	./internal/models
-	./internal/server
-	./cmd/test-models
 	./internal/lib
 )

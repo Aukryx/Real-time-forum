@@ -4,22 +4,9 @@ import (
 	"db"
 	"encoding/json"
 	"middlewares"
+	"models"
 	"net/http"
 )
-
-type RegisterRequest struct {
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Username  string `json:"username"`
-	Gender    string `json:"gender"`
-	Password  string `json:"password"`
-	Email     string `json:"email"`
-}
-
-type RegisterResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Ensuring the method is POST
@@ -29,7 +16,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Getting the JSON form data to test
-	var req RegisterRequest
+	var req models.RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -43,7 +30,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Checking if the insert failed
 	if userID == 0 {
-		response := RegisterResponse{Success: false, Message: errorMsg}
+		response := models.RegisterResponse{Success: false, Message: errorMsg}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
@@ -53,5 +40,5 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	middlewares.CreateSession(w, userID, req.Username, "User", uuid)
 
 	// If the insert didn't fail, notify the js of the success
-	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Registration successful"})
+	json.NewEncoder(w).Encode(models.RegisterResponse{Success: true, Message: "Registration successful"})
 }

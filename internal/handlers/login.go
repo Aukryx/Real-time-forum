@@ -5,18 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"middlewares"
+	"models"
 	"net/http"
 )
-
-type LoginRequest struct {
-	Name     string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Ensuring the method is POST
@@ -26,7 +17,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Getting the JSON form data to test
-	var req LoginRequest
+	var req models.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -38,7 +29,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Checking if the authentication failed
 	if errorDB != "nil" {
-		response := RegisterResponse{Success: false, Message: errorDB}
+		response := models.RegisterResponse{Success: false, Message: errorDB}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
@@ -56,5 +47,5 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If authentication succeeded, notify the client of the success
-	json.NewEncoder(w).Encode(RegisterResponse{Success: true, Message: "Login successful"})
+	json.NewEncoder(w).Encode(models.RegisterResponse{Success: true, Message: "Login successful"})
 }

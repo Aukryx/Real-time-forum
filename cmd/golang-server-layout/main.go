@@ -79,7 +79,7 @@ func setupMux() *http.ServeMux {
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:              ":8040",
+		Addr:              ":8080",
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,
