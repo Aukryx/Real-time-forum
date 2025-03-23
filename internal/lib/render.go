@@ -4,21 +4,40 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
-// Base directory for HTML files
-const TemplateDir = "../../web/templates"
-
 // RenderTemplate renders a single HTML file
 func RenderTemplate(w http.ResponseWriter, page string, data interface{}) {
-	// Define the template file path
-	pagePath := filepath.Join(TemplateDir, page+".html")
+	// Try multiple possible template paths
+	templatePaths := []string{
+		filepath.Join("../../web/templates", page+".html"), // Original relative path
+		filepath.Join("web/templates", page+".html"),       // From root directory
+		filepath.Join("./web/templates", page+".html"),     // Another possibility
+	}
 
-	// Parse the template
-	tmpl, err := template.ParseFiles(pagePath)
-	if err != nil {
-		log.Printf("[ERROR] Failed to load template: %v", err)
+	var (
+		tmpl          *template.Template
+		err           error
+		templateFound bool = false
+	)
+
+	// Try each path until we find one that works
+	for _, path := range templatePaths {
+		if _, err := os.Stat(path); err == nil {
+			log.Printf("[INFO] Using template path: %s", path)
+			tmpl, err = template.ParseFiles(path)
+			if err == nil {
+				templateFound = true
+				break
+			}
+		}
+	}
+
+	// If no template found, return error
+	if !templateFound {
+		log.Printf("[ERROR] Failed to load template '%s'. Tried paths: %v", page, templatePaths)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}

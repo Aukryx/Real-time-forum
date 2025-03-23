@@ -5,6 +5,7 @@ import (
 	"handlers"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -29,8 +30,15 @@ func main() {
 func setupMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// Serve static files
-	fs := http.FileServer(http.Dir("../../web/static"))
+	// Serve static files with better path handling
+	staticPath := "../../web/static" // Original path
+	if _, err := os.Stat(staticPath); os.IsNotExist(err) {
+		// If running from root directory (as on Render)
+		staticPath = "web/static"
+		log.Printf("Using alternate static path: %s", staticPath)
+	}
+
+	fs := http.FileServer(http.Dir(staticPath))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Define routes
@@ -78,8 +86,14 @@ func setupMux() *http.ServeMux {
 
 // setupServer configures the HTTP server
 func setupServer(handler http.Handler) *http.Server {
+	// Get port from environment variable or default to 8080
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	return &http.Server{
-		Addr:              ":8080",
+		Addr:              ":" + port,
 		Handler:           handlers.WithErrorHandling(handler),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,
