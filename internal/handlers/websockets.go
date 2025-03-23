@@ -28,6 +28,7 @@ var upgrader = websocket.Upgrader{
 			"http://localhost:8050",
 			"http://localhost:8060",
 			"http://localhost:8070",
+			"https://real-time-forum.onrender.com",
 		}
 		// Get the website link (ex: http://localhost:8080)
 		origin := r.Header.Get("Origin")
