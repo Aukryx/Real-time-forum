@@ -12,6 +12,15 @@
     <title>Forum Layout</title>
 </head>
 <body>
+    <script>
+        // Detect if we're on Render
+        window.IS_DEMO_MODE = window.location.hostname.includes('render.com') || 
+                              window.location.hostname.includes('onrender.com');
+        
+        if (window.IS_DEMO_MODE) {
+          console.log("Running in demo mode - WebSockets disabled");
+        }
+      </script>
     <script src="../static/js/auth/register.js" type="module"></script>
     <script src="../static/js/auth/login.js" type="module"></script>
     <script src="../static/js/setInterval.js" type="module"></script>

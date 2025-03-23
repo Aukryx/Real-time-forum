@@ -51,6 +51,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Regular WebSocket handling code for local development
 	// Retrieving the cookie for the uuid
 	cookie, errCookie := r.Cookie("session_id")
 	if errCookie != nil {
