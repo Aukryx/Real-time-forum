@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"models"
 	"net/http"
+	"os"
 	"slices"
 
 	"github.com/gorilla/websocket"
@@ -39,6 +40,17 @@ var upgrader = websocket.Upgrader{
 
 // Handler that will upgrade the HTTP connection to a WebSocket connection and listen for messages
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
+	// Check if running on Render
+	if os.Getenv("PORT") != "" {
+		// Return a friendly message instead of attempting WebSocket connection
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "disabled",
+			"message": "WebSockets are disabled in the demo version. Please check the GitHub repository for the full application.",
+		})
+		return
+	}
+
 	// Retrieving the cookie for the uuid
 	cookie, errCookie := r.Cookie("session_id")
 	if errCookie != nil {
