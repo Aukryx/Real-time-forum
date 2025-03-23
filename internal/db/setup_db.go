@@ -18,6 +18,33 @@ func SetupDatabase() *sql.DB {
 	// Check if config is initialized
 	config.Initialize()
 
+	// Check if running on Render (detect by PORT environment variable)
+	if os.Getenv("PORT") != "" {
+		log.Println("Running on Render, using in-memory database")
+		// Use in-memory database for Render
+		db, err := sql.Open("sqlite3", ":memory:")
+		if err != nil {
+			log.Printf("Error opening in-memory database: %v", err)
+			// Continue with normal setup as fallback
+		} else {
+			// Set up in-memory tables
+			DB = db
+			createUsersTable(db)
+			createPostsTable(db)
+			createCommentsTable(db)
+			createNotificationsTable(db)
+			createPrivateMessageTable(db)
+
+			// Add a demo user
+			_, err = db.Exec("INSERT INTO users (username, email, password, avatar, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
+				"demo_user", "demo@example.com", "password_hash", "default_avatar",
+			)
+
+			log.Println("In-memory database setup complete")
+			return db
+		}
+	}
+
 	/***********************************************************************
 	* Build the connection string activating authentication and encryption.
 	* It'll only work using go tags like:
