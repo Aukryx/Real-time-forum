@@ -12,7 +12,9 @@ import (
 
 func main() {
 	// Initialize configuration
+	log.Println("Application starting...")
 	config.Initialize()
+	log.Println("Configuration loaded.")
 
 	// Configure router and server
 	mux := setupMux()
@@ -24,6 +26,7 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+	log.Println("Server stopped.")
 }
 
 // setupMux configures routes
