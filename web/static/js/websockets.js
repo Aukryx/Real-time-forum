@@ -5,6 +5,16 @@ import { receivePrivateMessage, receiveChatHistory, showTypingIndicator } from "
 let socket = null;
 
 export async function setupWebSockets() {
+    // Check if running on Render's domain
+    if (window.location.hostname.includes('render.com')) {
+        console.log("WebSockets disabled in demo version");
+        // Return a mock WebSocket that does nothing
+        return {
+            send: function() { console.log("WebSocket disabled in demo"); },
+            close: function() { }
+        };
+    }
+
     // Getting username with a request server
     let username = await getUsername();
 

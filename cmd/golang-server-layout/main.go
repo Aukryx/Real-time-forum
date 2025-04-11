@@ -2,6 +2,7 @@ package main
 
 import (
 	"config"
+	"encoding/json"
 	"handlers"
 	"log"
 	"net/http"
@@ -51,7 +52,22 @@ func setupMux() *http.ServeMux {
 	mux.HandleFunc("/register", handlers.RegisterHandler)
 	mux.HandleFunc("/login", handlers.LoginHandler)
 	mux.HandleFunc("/api/check-session", handlers.CheckSession)
-	mux.HandleFunc("/ws", handlers.HandleConnection)
+
+	// Replace the WebSocket route with a conditional
+	if os.Getenv("PORT") != "" {
+		// On Render - return a simple JSON response
+		mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK) // Return 200 instead of 400
+			json.NewEncoder(w).Encode(map[string]string{
+				"status":  "disabled",
+				"message": "WebSockets are disabled in demo mode",
+			})
+		})
+	} else {
+		// Local development - use real WebSockets
+		mux.HandleFunc("/ws", handlers.HandleConnection)
+	}
 
 	// API routes
 	mux.HandleFunc("/api/users", handlers.GetConnectedAndDisconnectedUsers)

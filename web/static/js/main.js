@@ -3,6 +3,21 @@ import { populateUserList } from './user_list.js';
 import { populatePostList, setupPostCreation } from './posts.js';
 import { initializePrivateMessaging } from './private_message.js';
 
+// Add this at the top of the file - Demo mode detection
+const IS_DEMO_MODE = window.location.hostname.includes('render.com') || 
+                    window.location.hostname.includes('onrender.com');
+
+// Add mock WebSocket for demo mode
+if (IS_DEMO_MODE) {
+  console.log("Running in demo mode - WebSockets disabled");
+  
+  // Create global mock object to prevent errors
+  window.mockWebSocket = {
+    send: function() { console.log("WebSocket disabled in demo"); },
+    close: function() {}
+  };
+}
+
 export async function createMainPage() {
   const response = await fetch('/api/navbar', {
     method: 'GET',
@@ -205,6 +220,22 @@ export async function createMainPage() {
   document.body.appendChild(contentWrapper);
   document.body.appendChild(footer);
   
+  // Add demo mode banner if needed
+  if (IS_DEMO_MODE) {
+    const banner = document.createElement('div');
+    banner.style.background = 'rgba(44, 62, 80, 0.9)';
+    banner.style.color = 'white';
+    banner.style.padding = '10px';
+    banner.style.textAlign = 'center';
+    banner.style.position = 'fixed';
+    banner.style.top = '0';
+    banner.style.left = '0';
+    banner.style.right = '0';
+    banner.style.zIndex = '9999';
+    banner.innerHTML = 'DEMO MODE: Real-time chat features are disabled. For the full experience, please check the GitHub repository.';
+    document.body.appendChild(banner);
+  }
+  
   // Initialize everything after DOM elements are created
   initializePage();
   return user.username
@@ -216,7 +247,13 @@ function initializePage() {
   populatePostList();
   populateImageList();
   setupPostCreation();
-  initializePrivateMessaging();
+  
+  // Only initialize messaging if not in demo mode
+  if (!IS_DEMO_MODE) {
+    initializePrivateMessaging();
+  } else {
+    console.log("Private messaging disabled in demo mode");
+  }
 }
 
 function populateImageList() {
