@@ -1,6 +1,6 @@
 import { getUsername } from "./getUser.js";
 import { populateUserList } from "./user_list.js";
-import { receivePrivateMessage, receiveChatHistory } from "./private_message.js";
+import { receivePrivateMessage, receiveChatHistory, showTypingIndicator } from "./private_message.js";
 
 let socket = null;
 
@@ -51,6 +51,9 @@ export async function setupWebSockets() {
                     console.log('Chat history:', data);
                     receiveChatHistory(data.user2name, data.messages);
                     break;
+                case 'typing':
+                    showTypingIndicator(data.sender)
+                    break;
                 case 'system_notification':
                     console.log('System notification:', data.message);
                     break;
@@ -75,7 +78,7 @@ export async function setupWebSockets() {
             };
             socket.send(JSON.stringify(privateMessage));
         } else {
-            console.error("WebSocket is not open. Cannot send message.");
+            console.error("WebSocket is not open. Cannot send message. (private message)");
         }
     };
 
@@ -92,7 +95,24 @@ export async function setupWebSockets() {
             };
             socket.send(JSON.stringify(chatHistoryRequest));
         } else {
-            console.error("WebSocket is not open. Cannot send message.");
+            console.error("WebSocket is not open. Cannot send message. (chat history)");
+        }
+    }
+
+    // Function to notify the server/user that someone is typing
+    socket.typingInProgress = function (receiver) {
+        // console.log(username, "Request typing in progress with", receiver);
+        
+        // Checking the state of the websocket connection
+        if (socket.readyState === WebSocket.OPEN) {
+            const typingInProgress = {
+                type: "typing",
+                sender: username,
+                receiver: receiver,
+            };
+            socket.send(JSON.stringify(typingInProgress));
+        } else {
+            console.error("WebSocket is not open. Cannot send message. (typing in progress)");
         }
     }
 

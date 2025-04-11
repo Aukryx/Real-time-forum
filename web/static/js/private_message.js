@@ -436,6 +436,7 @@ function openChatWithUser(username) {
   chatWindow.style.display = 'flex';
 }
 
+
 // Create the chat window
 function createChatWindow() {
   // Create the chat window container
@@ -550,6 +551,8 @@ function createChatWindow() {
     if (event.key === 'Enter') {
       console.log("sending message");
       sendMessage();
+    } else {
+      handleTypingInProgress();
     }
   });
   
@@ -798,5 +801,120 @@ function sendMessage() {
     }
   } else {
     console.error("WebSocket is not initialized or sendPrivateMessage is not defined.");
+  }
+}
+
+// Typing indicator variables
+let typingTimeout;
+let isTypingActive = false;
+const TYPING_DEBOUNCE_TIME = 300; // ms - delay before sending "typing" event
+const TYPING_COOLDOWN = 2000; // ms - minimum time between "typing" events
+let lastTypingEventTime = 0;
+
+// Function to handle typing in progress
+function handleTypingInProgress() {
+  if (!currentTab) return;
+  
+  const now = Date.now();
+  clearTimeout(typingTimeout);
+  
+  const currentTabData = chatTabs.find(tab => tab.id === currentTab);
+  if (!currentTabData) return;
+  
+  const socket = getSocket();
+  
+  // Send typing event if cooldown has passed
+  if (now - lastTypingEventTime > TYPING_COOLDOWN) {
+    if (socket?.typingInProgress) {
+      socket.typingInProgress(currentTabData.username);
+      lastTypingEventTime = now;
+      isTypingActive = true;
+    }
+  }
+  
+  // Set timeout to reset typing state
+  typingTimeout = setTimeout(() => {
+    isTypingActive = false;
+  }, TYPING_DEBOUNCE_TIME);
+}
+
+// Function to show typing indicator
+export function showTypingIndicator(username) {
+  // Find the tab for this user
+  const tabData = chatTabs.find(tab => tab.username === username);
+  if (!tabData) return;
+  
+  const contentElement = document.getElementById(tabData.contentId);
+  if (!contentElement) return;
+  
+  // Remove existing indicator if any
+  const existingIndicator = contentElement.querySelector('.typing-indicator');
+  if (existingIndicator) {
+    clearTimeout(existingIndicator.timeout);
+    existingIndicator.remove();
+  }
+  
+  // Create new indicator
+  const typingIndicator = document.createElement('div');
+  typingIndicator.className = 'typing-indicator';
+  typingIndicator.style.display = 'flex';
+  typingIndicator.style.alignItems = 'center';
+  typingIndicator.style.margin = '5px 0';
+  typingIndicator.style.fontSize = '0.9em';
+  typingIndicator.style.color = '#666';
+  
+  // Create username text
+  console.log(username, "is typing");
+  
+  const usernameSpan = document.createElement('span');
+  usernameSpan.textContent = `${username} is typing`;
+  
+  // Create dots container
+  const dotsContainer = document.createElement('div');
+  dotsContainer.className = 'typing-dots';
+  dotsContainer.style.display = 'inline-flex';
+  dotsContainer.style.alignItems = 'center';
+  dotsContainer.style.marginLeft = '5px';
+  
+  // Create 3 animated dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'typing-dot';
+    dot.style.width = '6px';
+    dot.style.height = '6px';
+    dot.style.borderRadius = '50%';
+    dot.style.backgroundColor = '#666';
+    dot.style.margin = '0 2px';
+    dot.style.animation = `typingBounce 1.4s infinite ease-in-out`;
+    dot.style.animationDelay = `${i * 0.2}s`;
+    dotsContainer.appendChild(dot);
+  }
+  
+  // Assemble the indicator
+  typingIndicator.appendChild(usernameSpan);
+  typingIndicator.appendChild(dotsContainer);
+  contentElement.appendChild(typingIndicator);
+  
+  // Auto-remove after 2 seconds of inactivity
+  typingIndicator.timeout = setTimeout(() => {
+    typingIndicator.remove();
+  }, TYPING_COOLDOWN);
+  
+  // Ensure animation styles exist
+  addTypingAnimationStyles();
+}
+
+// Add animation styles if not already present
+function addTypingAnimationStyles() {
+  if (!document.getElementById('typingAnimation')) {
+    const style = document.createElement('style');
+    style.id = 'typingAnimation';
+    style.textContent = `
+      @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-3px); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 }

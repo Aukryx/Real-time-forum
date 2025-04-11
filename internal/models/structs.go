@@ -65,7 +65,7 @@ type Session struct {
 	CreatedAt time.Time
 }
 
-// Struct that will store the content of the json sent by the javascript
+// Struct that will store the content of the private message
 type PrivateMessage struct {
 	Type     string   `json:"type"`
 	Sender   string   `json:"sender"`

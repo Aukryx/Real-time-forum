@@ -93,9 +93,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 
 			// Insert the message into the database
 			db.PrivateMessageInsert(sender, receiver, receivedMsg.Message)
+
 		} else if receivedMsg.Type == "chat_history_request" {
 			fmt.Println("Received chat history request between", receivedMsg.Sender, "to", receivedMsg.Receiver)
 			db.SendChatHistory(sender, receiver, conn)
+
+		} else if receivedMsg.Type == "typing" {
+			db.TypingInProgress(receivedMsg)
 		}
 	}
 }
