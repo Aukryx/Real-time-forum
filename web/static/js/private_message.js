@@ -438,6 +438,7 @@ function openChatWithUser(username) {
 
 
 // Create the chat window
+// Create the chat window
 function createChatWindow() {
   // Create the chat window container
   chatWindow = document.createElement('div');
@@ -503,11 +504,26 @@ function createChatWindow() {
   chatContent.style.overflowY = 'auto';
   chatContent.style.padding = '10px';
   
-  // Create the input area
+  // Create the input area container
   const inputArea = document.createElement('div');
-  inputArea.style.padding = '10px';
+  inputArea.style.padding = '0 10px 10px 10px';
   inputArea.style.borderTop = '1px solid #ccc';
   inputArea.style.display = 'flex';
+  inputArea.style.flexDirection = 'column';
+  
+  // Create typing indicator container
+  const typingIndicatorContainer = document.createElement('div');
+  typingIndicatorContainer.id = 'typingIndicatorContainer';
+  typingIndicatorContainer.style.height = '20px';
+  typingIndicatorContainer.style.padding = '0 5px';
+  typingIndicatorContainer.style.fontSize = '0.8em';
+  typingIndicatorContainer.style.color = '#666';
+  typingIndicatorContainer.style.display = 'none'; // Hidden by default
+  
+  // Create the input row (contains text input and send button)
+  const inputRow = document.createElement('div');
+  inputRow.style.display = 'flex';
+  inputRow.style.marginTop = '5px';
   
   // Create the text input
   const textInput = document.createElement('input');
@@ -541,24 +557,25 @@ function createChatWindow() {
   
   // Add click event to send button
   sendButton.addEventListener('click', () => {
-    console.log("sending message");
-    
     sendMessage();
   });
   
   // Add keypress event to text input
   textInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
-      console.log("sending message");
       sendMessage();
     } else {
       handleTypingInProgress();
     }
   });
   
-  // Add elements to input area
-  inputArea.appendChild(textInput);
-  inputArea.appendChild(sendButton);
+  // Add elements to input row
+  inputRow.appendChild(textInput);
+  inputRow.appendChild(sendButton);
+  
+  // Add typing indicator and input row to input area
+  inputArea.appendChild(typingIndicatorContainer);
+  inputArea.appendChild(inputRow);
   
   // Add elements to chat window
   chatWindow.appendChild(chatHeader);
@@ -568,6 +585,9 @@ function createChatWindow() {
   
   // Add chat window to document
   document.body.appendChild(chatWindow);
+  
+  // Add typing animation styles
+  addTypingAnimationStyles();
 }
 
 // Create a new chat tab
@@ -650,6 +670,12 @@ function createNewChatTab(username) {
 
 // Switch to a specific tab
 function switchToTab(tabId) {
+  const typingIndicatorContainer = document.getElementById('typingIndicatorContainer');
+  if (typingIndicatorContainer) {
+    typingIndicatorContainer.style.display = 'none';
+    typingIndicatorContainer.innerHTML = '';
+  }
+
   // Masquer tous les contenus d'onglets
   document.querySelectorAll('.tab-content').forEach(content => {
     content.style.display = 'none';
@@ -839,33 +865,22 @@ function handleTypingInProgress() {
 }
 
 // Function to show typing indicator
+// Function to show typing indicator
 export function showTypingIndicator(username) {
-  // Find the tab for this user
-  const tabData = chatTabs.find(tab => tab.username === username);
-  if (!tabData) return;
-  
-  const contentElement = document.getElementById(tabData.contentId);
-  if (!contentElement) return;
+  // Get the typing indicator container
+  const typingIndicatorContainer = document.getElementById('typingIndicatorContainer');
+  if (!typingIndicatorContainer) return;
   
   // Remove existing indicator if any
-  const existingIndicator = contentElement.querySelector('.typing-indicator');
-  if (existingIndicator) {
-    clearTimeout(existingIndicator.timeout);
-    existingIndicator.remove();
-  }
+  typingIndicatorContainer.innerHTML = '';
   
   // Create new indicator
   const typingIndicator = document.createElement('div');
   typingIndicator.className = 'typing-indicator';
   typingIndicator.style.display = 'flex';
   typingIndicator.style.alignItems = 'center';
-  typingIndicator.style.margin = '5px 0';
-  typingIndicator.style.fontSize = '0.9em';
-  typingIndicator.style.color = '#666';
   
   // Create username text
-  console.log(username, "is typing");
-  
   const usernameSpan = document.createElement('span');
   usernameSpan.textContent = `${username} is typing`;
   
@@ -880,11 +895,11 @@ export function showTypingIndicator(username) {
   for (let i = 0; i < 3; i++) {
     const dot = document.createElement('div');
     dot.className = 'typing-dot';
-    dot.style.width = '6px';
-    dot.style.height = '6px';
+    dot.style.width = '4px';
+    dot.style.height = '4px';
     dot.style.borderRadius = '50%';
     dot.style.backgroundColor = '#666';
-    dot.style.margin = '0 2px';
+    dot.style.margin = '0 1px';
     dot.style.animation = `typingBounce 1.4s infinite ease-in-out`;
     dot.style.animationDelay = `${i * 0.2}s`;
     dotsContainer.appendChild(dot);
@@ -893,18 +908,21 @@ export function showTypingIndicator(username) {
   // Assemble the indicator
   typingIndicator.appendChild(usernameSpan);
   typingIndicator.appendChild(dotsContainer);
-  contentElement.appendChild(typingIndicator);
   
-  // Auto-remove after 2 seconds of inactivity
+  // Add to container and show it
+  typingIndicatorContainer.appendChild(typingIndicator);
+  typingIndicatorContainer.style.display = 'block';
+  
+  // Auto-hide after cooldown period
   typingIndicator.timeout = setTimeout(() => {
-    typingIndicator.remove();
+    typingIndicatorContainer.style.display = 'none';
+    typingIndicatorContainer.innerHTML = '';
   }, TYPING_COOLDOWN);
   
   // Ensure animation styles exist
   addTypingAnimationStyles();
 }
 
-// Add animation styles if not already present
 function addTypingAnimationStyles() {
   if (!document.getElementById('typingAnimation')) {
     const style = document.createElement('style');
@@ -912,7 +930,7 @@ function addTypingAnimationStyles() {
     style.textContent = `
       @keyframes typingBounce {
         0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-3px); }
+        30% { transform: translateY(-1px); }
       }
     `;
     document.head.appendChild(style);

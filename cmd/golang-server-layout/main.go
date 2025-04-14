@@ -108,7 +108,7 @@ func setupServer(handler http.Handler) *http.Server {
 	// Get port from environment variable or default to 8080
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8060"
+		port = "8080"
 	}
 
 	return &http.Server{
